@@ -1,0 +1,17 @@
+{
+	"agent" : {
+		"id" : "A00112233",
+		"node" : [
+			{
+				"id" : "N1234",
+				"driver" : {
+					"serial" : "0065DEF5"
+				}
+			}
+		],
+		"server" : {
+			"url" : "localhost",
+			"port" : 1883
+		}
+	}
+}
