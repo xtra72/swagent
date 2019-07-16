@@ -17,8 +17,6 @@ bool	Thread::joinable()
 
 bool	Thread::join()
 {
-	int	status;
-
 	pthread_join(thread_, NULL);
 	thread_ = 0;
 

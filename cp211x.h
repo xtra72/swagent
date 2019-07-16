@@ -6,7 +6,8 @@
 class	CP2110 : public HIDUART
 {
 public:
-	CP2110(std::string const& _serial = "", Object* _parent = NULL);
+	CP2110(std::string const& _id = "", Object* _parent = NULL);
+	CP2110(std::string const& _id, std::string const& _serial, Object* _parent = NULL);
 	~CP2110();
 
 	static	uint32_t	GetDeviceCount();

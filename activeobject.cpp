@@ -14,15 +14,15 @@ ActiveObject::ActiveObject(std::string const& _id, Object* _parent)
 	activated_(), 
 	waiting_for_initialization_()
 {
-	message_handler_map_[Message::TYPE_PACKET_RECEIVED]		= Received;
-	message_handler_map_[Message::TYPE_PACKET_SEND]			= Send;
-	message_handler_map_[Message::TYPE_PACKET_SEND_CONFIRM] = SendConfirm;
-	message_handler_map_[Message::TYPE_SERVER_REQUEST]	= ServerRequest;
-	message_handler_map_[Message::TYPE_SERVER_RESPONSE] = ServerResponse;
-	message_handler_map_[Message::TYPE_REPORT_STATUS] 	= ReportStatus;
-	message_handler_map_[Message::TYPE_REPORT_VALUE] 	= ReportValue;
-	message_handler_map_[Message::TYPE_REPORT_VALUES] 	= ReportValues;
-	message_handler_map_[Message::TYPE_RESPONSE_REPORT_VALUE] 	= ResponseReportValue;
+	message_handler_map_[MESSAGE_TYPE_PACKET_RECEIVED]		= OnMessagePacketReceivedCallback;
+	message_handler_map_[MESSAGE_TYPE_PACKET_SEND]			= OnMessagePacketSendCallback;
+	message_handler_map_[MESSAGE_TYPE_PACKET_SEND_CONFIRM]	= OnMessagePacketSendConfirmCallback;
+	message_handler_map_[MESSAGE_TYPE_SERVER_REQUEST]		= OnMessageServerRequestCallback;
+	message_handler_map_[MESSAGE_TYPE_SERVER_RESPONSE]		= OnMessageServerResponseCallback;
+	message_handler_map_[MESSAGE_TYPE_REPORT_STATUS]		= OnMessageReportStatusCallback;
+	message_handler_map_[MESSAGE_TYPE_REPORT_VALUE]			= OnMessageReportValueCallback;
+	message_handler_map_[MESSAGE_TYPE_REPORT_VALUES]		= OnMessageReportValuesCallback;
+	message_handler_map_[MESSAGE_TYPE_RESPONSE_REPORT_VALUE]= OnMessageResponseReportValueCallback;
 }
 
 ActiveObject::~ActiveObject()
@@ -126,6 +126,7 @@ void* ActiveObject::ThreadMain(void* _data)
 	object->Postprocess();
 	object->activated_.Unlock();
 
+	return	0;
 }
 
 bool	ActiveObject::Post(Message* _message)
@@ -222,7 +223,7 @@ void	ActiveObject::MessageProcess()
 		auto handler = message_handler_map_.find(message->GetType());
 		if (handler != message_handler_map_.end())
 		{
-			TRACE_INFO("MSG[" << message->GetID() << "] : received - " << message->GetType());
+			//TRACE_INFO("MSG[" << message->GetID() << "] : received - " << message->GetType());
 			handler->second(this, message);
 		}
 		else
@@ -243,63 +244,63 @@ void	ActiveObject::Postprocess()
 //	return	dynamic_cast<ActiveObject*>(_object) != NULL;
 //}
 
-bool	ActiveObject::Received(ActiveObject *_object, Message* _message)
+bool	ActiveObject::OnMessagePacketReceivedCallback(ActiveObject *_object, Message* _message)
 {
 	ASSERT(_object);
 
 	return	_object->OnReceived(_message);
 }
 
-bool	ActiveObject::Send(ActiveObject *_object, Message* _message)
+bool	ActiveObject::OnMessagePacketSendCallback(ActiveObject *_object, Message* _message)
 {
 	ASSERT(_object);
 
 	return	_object->OnSend(_message);
 }
 
-bool	ActiveObject::SendConfirm(ActiveObject *_object, Message* _message)
+bool	ActiveObject::OnMessagePacketSendConfirmCallback(ActiveObject *_object, Message* _message)
 {
 	ASSERT(_object);
 
 	return	_object->OnSendConfirm(_message);
 }
 
-bool	ActiveObject::ServerRequest(ActiveObject *_object, Message* _message)
+bool	ActiveObject::OnMessageServerRequestCallback(ActiveObject *_object, Message* _message)
 {
 	ASSERT(_object);
 
 	return	_object->OnServerRequest(_message);
 }
 
-bool	ActiveObject::ServerResponse(ActiveObject *_object, Message* _message)
+bool	ActiveObject::OnMessageServerResponseCallback(ActiveObject *_object, Message* _message)
 {
 	ASSERT(_object);
 
 	return	_object->OnServerResponse(_message);
 }
 
-bool	ActiveObject::ReportStatus(ActiveObject *_object, Message* _message)
+bool	ActiveObject::OnMessageReportStatusCallback(ActiveObject *_object, Message* _message)
 {
 	ASSERT(_object);
 
 	return	_object->OnReportStatus(_message);
 }
 
-bool	ActiveObject::ReportValue(ActiveObject *_object, Message* _message)
+bool	ActiveObject::OnMessageReportValueCallback(ActiveObject *_object, Message* _message)
 {
 	ASSERT(_object);
 
 	return	_object->OnReportValue(_message);
 }
 
-bool	ActiveObject::ReportValues(ActiveObject *_object, Message* _message)
+bool	ActiveObject::OnMessageReportValuesCallback(ActiveObject *_object, Message* _message)
 {
 	ASSERT(_object);
 
 	return	_object->OnReportValues(_message);
 }
 
-bool	ActiveObject::ResponseReportValue(ActiveObject *_object, Message* _message)
+bool	ActiveObject::OnMessageResponseReportValueCallback(ActiveObject *_object, Message* _message)
 {
 	ASSERT(_object);
 

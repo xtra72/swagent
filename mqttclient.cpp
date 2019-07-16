@@ -5,6 +5,7 @@
 #include "mqttclient.h"
 #include "time2.h"
 #include "utils.h"
+#include "activeobject.h"
 
 void	OnConnectCB(struct mosquitto *mosq, void *obj, int result);
 void	OnDisconnectCB(struct mosquitto *mosq, void *obj, int rc);
@@ -16,6 +17,24 @@ void	OnLogCB(struct mosquitto *mosq, void *obj, int level, const char *str);
 
 static	int static_mid_ = 0;
 static	bool	lib_init_ = false;
+
+MQTTClient::MessageConnected::MessageConnected(std::string const& _receiver, std::string const& _sender)
+: Message(MESSAGE_TYPE_CONNECTED, _receiver, _sender)
+{
+}
+
+MQTTClient::MessageConnected::~MessageConnected()
+{
+}
+
+MQTTClient::MessageDisconnected::MessageDisconnected(std::string const& _receiver, std::string const& _sender)
+: Message(MESSAGE_TYPE_DISCONNECTED, _receiver, _sender)
+{
+}
+
+MQTTClient::MessageDisconnected::~MessageDisconnected()
+{
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //	Class	Publisher
@@ -498,6 +517,16 @@ void	MQTTClient::OnConnect(int result)
 			int	mid  = it->second->GetMID();
 			mosquitto_subscribe(mosquitto_, &mid, it->second->Topic().c_str(), 1);
 		}
+
+		ActiveObject*	active_object = dynamic_cast<ActiveObject*>(parent_);
+		if (active_object)
+		{
+			active_object->Post(new MessageConnected(parent_->GetID(), GetID()));
+		}
+		else
+		{
+			TRACE_WARN("Parent is not exist!");
+		}
 	}
 	else 
 	{
@@ -511,6 +540,12 @@ void	MQTTClient::OnDisconnect(int rc)
 	{
 		TRACE_INFO("Server disconnected. : " << rc);
 		Disconnect();
+
+		ActiveObject*	active_object = dynamic_cast<ActiveObject*>(parent_);
+		if (active_object)
+		{
+			active_object->Post(new MessageDisconnected(parent_->GetID(), GetID()));
+		}
 	}
 	else
 	{

@@ -6,10 +6,11 @@
 #define ERROR_LEVEL_INVALID_ARG         1
 #define ERROR_LEVEL_API_CODE            2
 
-HIDUART::HIDUART(uint16_t _vid, uint16_t _pid, std::string const& _serial, Object* _parent)
-: ActiveObject("hiduart", _parent), vid_(_vid), pid_(_pid), serial_(_serial), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
+HIDUART::HIDUART(std::string const& _id, uint16_t _vid, uint16_t _pid, std::string const& _serial, Object* _parent)
+: ActiveObject(_id, _parent), vid_(_vid), pid_(_pid), serial_(_serial), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
 {
 	trace.SetLevel(Trace::INFO);
+	properties_map_["serial_id"] = SetSerialID;
 }
 
 HIDUART::~HIDUART()
@@ -69,13 +70,7 @@ void	HIDUART::Preprocess()
 
 }
 
-bool	HIDUART::SetID(std::string const& _serial)
-{
-	SetSerial(_serial);
-	return	ActiveObject::SetID(_serial);
-}
-
-bool	HIDUART::SetSerial(std::string const& _serial)
+bool	HIDUART::SetSerialID(std::string const& _serial)
 {
 	this->serial_ = _serial;
 
@@ -88,7 +83,6 @@ void	HIDUART::Process()
 	static	uint32_t	rxLength = 0;
 	uint8_t		buffer[HID_UART_MAX_READ_SIZE];
 	uint32_t	length;
-	uint32_t	count = 0;
 
 	length = 0;
 	HID_UART_STATUS status = HidUart_Read(uart_, buffer, sizeof(buffer) , &length);
@@ -134,6 +128,15 @@ void	HIDUART::Process()
 #endif
 }
 
+void	HIDUART::Postprocess()
+{
+	if (uart_)
+	{
+		HidUart_Close(uart_);
+		uart_ = NULL;
+	}
+}
+
 bool	HIDUART::OnRead(uint8_t* _data, uint32_t _length)
 {
 	return	true;
@@ -144,6 +147,7 @@ bool	HIDUART::OnWrite(uint8_t* _data, uint32_t _length)
 
 	uint32_t	writeLength = 0;
 
+	TRACE_INFO("OnWrite(" << (char *)_data << ")");
 	HidUart_Write(uart_, _data, _length, &writeLength);
 
 	return	(_length == writeLength);
@@ -208,4 +212,15 @@ bool	HIDUART::GetSerial(uint16_t _vid, uint16_t _pid, uint32_t _index, std::stri
 	_serial = serial;	
 
 	return	true;
+}
+
+bool	HIDUART::SetSerialID(Object* _object, JSONNode const& _value)
+{
+	HIDUART*	hiduart = dynamic_cast<HIDUART*>(_object);
+	if (!hiduart)
+	{
+		return	false;	
+	}
+
+	return	hiduart->SetSerialID(_value.as_string());
 }

@@ -4,9 +4,8 @@
 		"node" : [
 			{
 				"id" : "N1234",
-				"driver" : {
-					"serial" : "0065DEF5"
-				}
+				"serial_id" : "0065DEF5",
+				"channel_count" : 8
 			}
 		],
 		"server" : {

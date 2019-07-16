@@ -53,15 +53,15 @@ protected:
 	virtual	bool	OnReportValues(Message* _message);
 	virtual	bool	OnResponseReportValue(Message* _message);
 
-	static	bool	Received(ActiveObject *_object, Message* _message);
-	static	bool	Send(ActiveObject *_object, Message* _message);
-	static	bool	SendConfirm(ActiveObject *_object, Message* _message);
-	static	bool	ServerRequest(ActiveObject *_object, Message* _message);
-	static	bool	ServerResponse(ActiveObject *_object, Message* _message);
-	static	bool	ReportStatus(ActiveObject *_object, Message* _message);
-	static	bool	ReportValue(ActiveObject *_object, Message* _message);
-	static	bool	ReportValues(ActiveObject *_object, Message* _message);
-	static	bool	ResponseReportValue(ActiveObject *_object, Message* _message);
+	static	bool	OnMessagePacketReceivedCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessagePacketSendCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessagePacketSendConfirmCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageServerRequestCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageServerResponseCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageReportStatusCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageReportValueCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageReportValuesCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageResponseReportValueCallback(ActiveObject *_object, Message* _message);
 
     static  void*   ThreadMain(void* _object);
 };

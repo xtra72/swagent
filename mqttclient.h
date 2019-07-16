@@ -9,10 +9,30 @@
 #include "thread.h"
 #include "time.h"
 #include "timer.h"
+#include "message.h"
+
+#define		MESSAGE_TYPE_CONNECTED				20
+#define		MESSAGE_TYPE_DISCONNECTED			21
+#define		MESSAGE_TYPE_MQTT_PUBLISH			22
+#define		MESSAGE_TYPE_MQTT_ESSAGE			23
 
 class	MQTTClient : public Object
 {
 public:
+	class	MessageConnected: public Message	
+	{
+	public:
+		MessageConnected(std::string const& _receiver, std::string const& _sender);
+		~MessageConnected();
+	};
+
+	class	MessageDisconnected: public Message	
+	{
+	public:
+		MessageDisconnected(std::string const& _receiver, std::string const& _sender);
+		~MessageDisconnected();
+	};
+
 	class	Publisher : public Object
 	{
 	public:

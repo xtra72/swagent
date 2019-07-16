@@ -2,6 +2,7 @@
 #define	AGENT_H__
 
 #include <list>
+#include <vector>
 #include "node.h"
 #include "activeobject.h"
 #include "mqttclient.h"
@@ -9,24 +10,19 @@
 class	Agent : public ActiveObject
 {
 public:
-	struct MFL 
-	{
-		MFL(uint16_t _x = 0, uint16_t _y = 0, uint16_t _z = 0): x(_x), y(_y), z(_z) {};
-		uint16_t	x;
-		uint16_t	y;
-		uint16_t	z;
-	};
 	class	MessageData: public Message	
 	{
 		public:
-			MessageData(std::string const& _receiver, std::string const& _sender, uint32_t _time, uint16_t* _data, uint32_t _length);
+			MessageData(std::string const& _receiver, std::string const& _sender, std::string const& _node_id, uint32_t _time, uint16_t* _data, uint32_t _length);
 			~MessageData();
 
-			uint32_t	GetTime(void);
-			uint32_t	GetLength()	{return	length_;}
-			uint16_t	GetValue(uint32_t index);
+			const std::string&	GetNodeId(void)	{	return	node_id_;	}
+					uint32_t	GetTime(void);
+					uint32_t	GetLength()	{return	length_;}
+					uint16_t	GetValue(uint32_t index);
 
 		protected:
+			std::string	node_id_;
 			uint32_t	time_;
 			uint16_t*	data_;
 			uint32_t	length_;
@@ -43,6 +39,15 @@ public:
 	Agent();
 	Agent(std::string const& _id);
 
+		Node*	GetNode(std::string const& _id);
+
+		bool	ContractRequestToServer(void);
+		bool	ControlResponseToServer(void);
+		bool	PushDataToServer(std::string const& _payload);
+		bool	PushStatusToServer(void);
+		bool	PushEncoderDataToServer(void);
+
+		bool	OnPlusData(std::string const& _node_id, char* _data);
 		bool	OnServerRequest(std::string const& _message);
 		bool	OnReceived(Message* _message);
 
@@ -51,7 +56,7 @@ protected:
 	MQTTClient	client_;
 
 	uint32_t	data_time;
-	std::list<MFL>		mfl_list_;
+	std::list<std::vector<uint16_t>>		mfl_list_;
 
 	void	Preprocess();
 	void	Process();
@@ -60,6 +65,8 @@ protected:
 	static	bool	SetNode(Object* _object, JSONNode const& _value);
 	static	bool	SetServer(Object* _object, JSONNode const& _value);
 	
-	static	bool	ReceiveData(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageConnectedCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageDisconnectedCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageDataCallback(ActiveObject *_object, Message* _message);
 };
 #endif

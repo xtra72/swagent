@@ -1,8 +1,13 @@
 #include "cp211x.h"
 
 
-CP2110::CP2110(std::string const& _serial, Object* _parent)
-:	HIDUART(SILABS_VID, CP2110_PID, _serial, _parent)
+CP2110::CP2110(std::string const& _id, Object* _parent)
+:	HIDUART(_id, SILABS_VID, CP2110_PID, "", _parent)
+{
+}
+
+CP2110::CP2110(std::string const& _id, std::string const& _serial, Object* _parent)
+:	HIDUART(_id, SILABS_VID, CP2110_PID, _serial, _parent)
 {
 }
 

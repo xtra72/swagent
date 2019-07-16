@@ -12,11 +12,10 @@
 class	HIDUART : public ActiveObject
 {
 public:
-	HIDUART(uint16_t _vid, uint16_t _pid, std::string const& _serial = "", Object* _parent = NULL);
+	HIDUART(std::string const& _id, uint16_t _vid, uint16_t _pid, std::string const& _serial = "", Object* _parent = NULL);
 	~HIDUART();
 
-	virtual	bool	SetID(std::string const& _serial);
-	virtual	bool	SetSerial(std::string const& _serial);
+	virtual	bool	SetSerialID(std::string const& _serial);
 
 	virtual	bool	OnRead(uint8_t* _data, uint32_t _length);
 	virtual	bool	OnWrite(uint8_t* _data, uint32_t _length);
@@ -39,6 +38,9 @@ protected:
 
 	virtual	void	Preprocess();
 	virtual	void	Process();
+	virtual	void	Postprocess();
+
+	static	bool	SetSerialID(Object* _object, JSONNode const& _value);
 };
 
 #endif
