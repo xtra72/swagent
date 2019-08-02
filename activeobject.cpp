@@ -58,14 +58,17 @@ bool	ActiveObject::Start(uint32_t _timeout)	// ms
             }
             else
             {
-                if (waiting_for_initialization_.TryLock(_timeout))
-                {
-                    TRACE_INFO("Started.");
-                }
-                else
-                {
-                    TRACE_ERROR("Exceeded initialization wait time.");
-                }
+				if (_timeout != 0)
+				{
+					if (waiting_for_initialization_.TryLock(_timeout))
+					{
+						TRACE_INFO("Started.");
+					}
+					else
+					{
+						TRACE_ERROR("Exceeded initialization wait time : " << _timeout);
+					}
+				}
             }
             waiting_for_initialization_.Unlock();
         }

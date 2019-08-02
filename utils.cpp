@@ -223,7 +223,7 @@ bool	HexStringToUint(std::string const& _string, uint32_t max_len, T& _value)
 		return	false;
 	}
 
-	for(int i = 0 ; i < _string.length() ; i++)
+	for(uint32_t i = 0 ; i < _string.length() ; i++)
 	{
 		if (('0' <= _string[i]) && (_string[i] <= '9'))
 		{
@@ -273,7 +273,7 @@ bool	StringToUint8(std::string const& _string ,uint8_t* _array, uint32_t _max_le
 		return	false;
 	}
 
-	for(int i = 0 ; i < _string.length() ; i+=2)
+	for(uint32_t i = 0 ; i < _string.length() ; i+=2)
 	{
 		_array[i/2] = 0;
 

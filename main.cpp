@@ -38,9 +38,10 @@ void SigintHandler(int param)
 int main(int argc, char* argv[])
 {
     // Register for SIGINT events
-    signal(SIGINT, SigintHandler);
+//    signal(SIGINT, SigintHandler);
     
-	Config	config("/etc/swagent");
+//	Config	config("/etc/swagent");
+	Config	config("/home/ubuntu/projects/swagent/swagent.json");
    
 	if (!config.Load(argc, argv))
 	{
@@ -54,11 +55,6 @@ int main(int argc, char* argv[])
 	if (config.Find("trace", trace_config))
 	{
 		trace_master.Set(trace_config);
-	}
-	else
-	{
-		trace_master.SetOutputConsole();
-		trace_master.SetEnable(true);
 	}
 
 	Config	agent_config;

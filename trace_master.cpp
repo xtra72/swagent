@@ -15,16 +15,16 @@ TraceMaster	trace_master;
 Trace		trace;
 
 TraceMaster::TraceMaster()
-: level_(Trace::INFO), continue_(false), output_(Trace::CONSOLE), enable_(false), locker_()
+: enable_(false), output_(Trace::FILE_MULTIPLE), level_(Trace::INFO), continue_(false), locker_()
 {
 	out_ = &std::cout;
 	file_path_ = std::string(DEFAULT_CONST_LOG_FILE_PATH);	
 	file_prefix_= std::string(program_invocation_short_name);
 	file_name_ = file_path_ + "/" + file_prefix_ + (".log");
 	file_size_ = DEFAULT_CONST_LOG_FILE_SIZE;
-	function_name_len_	= 32;
-	object_name_len_	= 32;
-	object_id_len_		= 32;
+	function_name_len_	= 16;
+	object_name_len_	= 16;
+	object_id_len_		= 16;
 	function_line_len_	= 4;
 }
 
@@ -44,6 +44,28 @@ bool	TraceMaster::Set(JSONNode const& _properties)
 	if (GetMemberValue(_properties, "enable", enable))
 	{
 		SetEnable(enable);
+	}
+
+	std::string	level;
+	if (GetMemberValue(_properties, "level", level))
+	{
+		if (level == "info")
+		{
+			level_ = Trace::INFO;
+		}
+		else if (level == "warning")
+		{
+			level_ = Trace::WARNING;
+		}
+		else if (level == "error")
+		{
+			level_ = Trace::ERROR;
+		}
+		else if (level == "critical")
+		{
+			level_ = Trace::CRITICAL;
+		}
+
 	}
 
 	std::string	output;

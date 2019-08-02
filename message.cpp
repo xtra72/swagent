@@ -16,9 +16,9 @@ struct	MessageTypeString
 }
 message_type_string[] =
 {
-	{ TYPE_UNKNOWN,			"Unknown" },
-	{ TYPE_PACKET_RECEIVED,	"Packet received" },
-	{ TYPE_PACKET_SEND,		"Packet send" }
+	{ MESSAGE_TYPE_UNKNOWN,			"Unknown" },
+	{ MESSAGE_TYPE_PACKET_RECEIVED,	"Packet received" },
+	{ MESSAGE_TYPE_PACKET_SEND,		"Packet send" }
 };
 
 static Locker							message_list_locker;
@@ -94,7 +94,9 @@ Message::Message(const Message& _message)
 	id_ = creation_time_.GetMicroseconds();
 	SetRetentionTime(5000000);
 
+	message_list_locker.Lock();
 	message_map_[id_] = this;
+	message_list_locker.Unlock();
 }
 
 Message::Message(uint32_t	_type, std::string const& _receiver, std::string const& _sender)
@@ -104,16 +106,20 @@ Message::Message(uint32_t	_type, std::string const& _receiver, std::string const
 	id_ = creation_time_.GetMicroseconds();
 	SetRetentionTime(5000000);
 
+	message_list_locker.Lock();
 	message_map_[id_] = this;
+	message_list_locker.Unlock();
 }
 
 Message::~Message()
 {
+	message_list_locker.Lock();
 	std::map<uint64_t, Message*>::iterator	it = message_map_.find(id_);
 	if (it != message_map_.end())
 	{
 		message_map_.erase(it);
 	}
+	message_list_locker.Unlock();
 }
 
 void	Message::SetReceiver(std::string const& _receiver)
@@ -167,7 +173,7 @@ uint32_t	Message::ToType(std::string const& _string)
 		}
 	}
 
-	return	TYPE_UNKNOWN;
+	return	MESSAGE_TYPE_UNKNOWN;
 }
 
 std::string	Message::ToString ( uint32_t _type)
@@ -196,7 +202,7 @@ void	Message::Dump(std::ostream& os) const
 
 
 MessagePacketReceived::MessagePacketReceived(std::string const& _receiver, std::string const& _sender, void const* _data, uint32_t _length)
-: Message(TYPE_PACKET_RECEIVED, _receiver, _sender), length_(_length)
+: Message(MESSAGE_TYPE_PACKET_RECEIVED, _receiver, _sender), length_(_length)
 {
 	if (_length == 0)
 	{
@@ -257,7 +263,7 @@ MessageLoRaPacketReceived::~MessageLoRaPacketReceived()
 
 
 MessagePacketSend::MessagePacketSend(std::string const& _receiver, std::string const& _sender, void const* _data, uint32_t _length)
-: Message(TYPE_PACKET_SEND, _receiver, _sender), length_(_length)
+: Message(MESSAGE_TYPE_PACKET_SEND, _receiver, _sender), length_(_length)
 {
 	if (_length == 0)
 	{
@@ -310,7 +316,7 @@ void	MessagePacketSend::Dump(ostream& os) const
 MessagePacketSendConfirm::MessagePacketSendConfirm(std::string const& _receiver, std::string const& _sender, void const* _data, uint32_t _length, MessageResult* _result)
 :	MessagePacketSend(_receiver, _sender, _data, _length), result_(_result)
 {
-	type_ = TYPE_PACKET_SEND_CONFIRM;
+	type_ = MESSAGE_TYPE_PACKET_SEND_CONFIRM;
 }
 
 void	MessagePacketSendConfirm::Expire(uint32_t _result)
@@ -327,7 +333,7 @@ bool	MessagePacketSendConfirm::SetData(uint8_t* _data, uint32_t _data_length)
 // Server Response
 /////////////////////////////////////////////////////////////////
 MessageServerResponse::MessageServerResponse(std::string const& _receiver, std::string const& _sender, JSONNode const& _result)
-: Message(TYPE_SERVER_RESPONSE, _receiver, _sender), result_(_result)
+: Message(MESSAGE_TYPE_SERVER_RESPONSE, _receiver, _sender), result_(_result)
 {
 }
 
@@ -339,12 +345,12 @@ MessageServerResponse::~MessageServerResponse()
 // Server Request
 /////////////////////////////////////////////////////////////////
 MessageServerRequest::MessageServerRequest(std::string const& _receiver, std::string const& _sender, JSONNode const& _params)
-: Message(TYPE_SERVER_REQUEST, _receiver, _sender), params_(_params)
+: Message(MESSAGE_TYPE_SERVER_REQUEST, _receiver, _sender), params_(_params)
 {
 }
 
 MessageServerRequest::MessageServerRequest(std::string const& _receiver, std::string const& _sender, std::string const& _message_id, JSONNode const& _params)
-: Message(TYPE_SERVER_REQUEST, _receiver, _sender), params_(_params)
+: Message(MESSAGE_TYPE_SERVER_REQUEST, _receiver, _sender), params_(_params)
 {
 	params_.push_back(JSONNode("message_id", _message_id));
 }
@@ -357,7 +363,7 @@ MessageServerRequest::~MessageServerRequest()
 // Server Request
 /////////////////////////////////////////////////////////////////
 MessageReportStatus::MessageReportStatus(std::string const& _receiver, std::string const& _sender, std::string const& _endpoint_id, bool _status, uint32_t _duration)
-: Message(TYPE_REPORT_STATUS, _receiver, _sender), endpoint_id_(_endpoint_id), status_(_status), duration_(_duration)
+: Message(MESSAGE_TYPE_REPORT_STATUS, _receiver, _sender), endpoint_id_(_endpoint_id), status_(_status), duration_(_duration)
 {
 }
 

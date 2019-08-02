@@ -6,10 +6,15 @@
 #define ERROR_LEVEL_INVALID_ARG         1
 #define ERROR_LEVEL_API_CODE            2
 
+HIDUART::HIDUART()
+: ActiveObject(), vid_(0), pid_(0), serial_(""), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
+{
+	properties_map_["serial_id"] = SetSerialID;
+}
+
 HIDUART::HIDUART(std::string const& _id, uint16_t _vid, uint16_t _pid, std::string const& _serial, Object* _parent)
 : ActiveObject(_id, _parent), vid_(_vid), pid_(_pid), serial_(_serial), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
 {
-	trace.SetLevel(Trace::INFO);
 	properties_map_["serial_id"] = SetSerialID;
 }
 
@@ -21,6 +26,8 @@ void	HIDUART::Preprocess()
 {
 	HID_UART_STATUS	status;
     uint32_t	index = 0;
+
+	loop_interval_ = 100;
 
 	TRACE_INFO("HIDUART serial : " << this->serial_);
     if (this->serial_ != "")
@@ -65,7 +72,7 @@ void	HIDUART::Preprocess()
 			TRACE_ERROR("Failed setting UART config: " << DecodeHidUartStatus(status).c_str());
 		}
     
-		status = HidUart_SetTimeouts(this->uart_, 2, 1000);
+		status = HidUart_SetTimeouts(this->uart_, 0, 1000);
 	}
 
 }
@@ -81,11 +88,11 @@ void	HIDUART::Process()
 {
 	static	uint8_t		rxBuffer[HID_UART_MAX_READ_SIZE + 1];
 	static	uint32_t	rxLength = 0;
-	uint8_t		buffer[HID_UART_MAX_READ_SIZE];
-	uint32_t	length;
+	static	uint8_t		buffer[HID_UART_MAX_READ_SIZE + 1];
+	static	uint32_t	length;
 
 	length = 0;
-	HID_UART_STATUS status = HidUart_Read(uart_, buffer, sizeof(buffer) , &length);
+	HID_UART_STATUS status = HidUart_Read(uart_, buffer, HID_UART_MAX_READ_SIZE , &length);
 
 	// Read at least 1 byte
 	if ((status == HID_UART_SUCCESS || status == HID_UART_READ_TIMED_OUT) && (length > 0))
@@ -114,18 +121,6 @@ void	HIDUART::Process()
 			}
 		}
 	}
-
-#if 0
-	if (count++ > 1000)
-	{
-		uint8_t		txBuffer[HID_UART_MAX_READ_SIZE];
-		uint32_t	writeLength;
-
-		sprintf((char*)txBuffer, "AT+START:1\n");
-		HidUart_Write(uart_, txBuffer, strlen((char *)txBuffer), &writeLength);
-		count = 0;
-	}
-#endif
 }
 
 void	HIDUART::Postprocess()

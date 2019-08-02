@@ -12,10 +12,10 @@ Locker	global_locker;
 
 static	Trace::Level	level_ = Trace::WARNING;
 
-static	bool			debug_ = false;
+static	bool			debug_ = true;
 
 Trace::Trace(Object* _object)
-: master_(trace_master), object_(_object), level_(::level_), continue_(false), state_(ENABLE), locker_(), debug_(::debug_)
+: master_(trace_master), object_(_object), class_name_(""), state_(ENABLE), level_(Trace::UNKNOWN), current_level_(Trace::UNKNOWN), continue_(false), debug_(::debug_), locker_()
 {
 }
 
@@ -71,6 +71,8 @@ void	Trace::SetEnable(bool _enable)
 bool	Trace::SetState(State _state)
 {
 	state_ = _state;
+
+	return	true;
 }
 
 Trace::State Trace::GetState()
@@ -85,6 +87,11 @@ void	Trace::SetLevel(Trace::Level _level)
 
 Trace::Level 	Trace::GetLevel()
 {
+	if (level_ == Trace::UNKNOWN)
+	{
+		return	trace_master.GetLevel();
+	}
+
 	return	level_;
 }
 
@@ -120,7 +127,7 @@ bool	Trace::GetDefaultDebug()
 
 Trace& Trace::Begin(Level _level, std::string const& _pretty_function, uint32_t _line)
 {
-	level_ = _level;
+	current_level_ = _level;
 	headline_ = "";
 
 	size_t colons, begin, end;
@@ -144,7 +151,7 @@ Trace& Trace::Begin(Level _level, std::string const& _pretty_function, uint32_t 
 	{
 		Date	date;
 		os << "[" << date ;
-		//os << "." << std::setw(6) << std::setfill('0') << date.GetMicroSecond() % 1000000 << std::setfill(' ') ;
+		os << "." << std::setw(6) << std::setfill('0') << date.GetMicroseconds() % 1000000 << std::setfill(' ') ;
 		os << "]";
 		os << "[" << setw(master_.GetFunctionNameSize()) << function.substr(0, master_.GetFunctionNameSize()) << "]";
 		os << "[" << setw(master_.GetFunctionLineSize()) <<_line << "]";
@@ -194,8 +201,9 @@ Trace& Trace::Begin(Level _level, std::string const& _pretty_function, uint32_t 
 		os << "[" << setw(master_.GetObjectNameSize()) << "global" << "]";
 	}
 
-	switch(level_)
+	switch(current_level_)
 	{
+	case	UNKNOWN:	os << "[UNKN]"; break;
 	case	INFO:	os << "[INFO]"; break;
 	case	WARNING:os << "[\033[1;33mWARN\033[0m]"; break;
 	case	ERROR:	os << "[\033[0;31mERRO\033[0m]"; break;

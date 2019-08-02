@@ -3,14 +3,24 @@
 		"id" : "A00112233",
 		"node" : [
 			{
-				"id" : "N1234",
-				"serial_id" : "0065DEF5",
-				"channel_count" : 8
+				"id" : "01234567",
+				"serial_id" : "0065DEE6",
+				"channel_count" : 8,
+				"frequency" : 915000000,
+				"power" : 18
 			}
 		],
 		"server" : {
 			"url" : "localhost",
 			"port" : 1883
+		},
+		"log" : {
+			"plus_log" : false
 		}
+	},
+	"trace" : {
+		"enable" : true,
+		"level" : "info",
+		"output" : "console"
 	}
 }
