@@ -4,6 +4,7 @@
 		"node" : [
 			{
 				"id" : "01234567",
+<<<<<<< HEAD
 				"serial_id" : "0065DEEF",
 				"channel_count" : 8,
 				"frequency" : 915000000,
@@ -12,6 +13,12 @@
 				{
 					"enable":false
 				}
+=======
+				"serial_id" : "0065DEE6",
+				"channel_count" : 8,
+				"frequency" : 915000000,
+				"power" : 18
+>>>>>>> acea361132e0c1f7384c7983fcbb0cae2f6080a9
 			}
 		],
 		"server" : {
