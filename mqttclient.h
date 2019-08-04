@@ -11,10 +11,10 @@
 #include "timer.h"
 #include "message.h"
 
-#define		MESSAGE_TYPE_CONNECTED				20
-#define		MESSAGE_TYPE_DISCONNECTED			21
-#define		MESSAGE_TYPE_MQTT_PUBLISH			22
-#define		MESSAGE_TYPE_MQTT_ESSAGE			23
+#define		MESSAGE_TYPE_CONNECTED				1000
+#define		MESSAGE_TYPE_DISCONNECTED			1001
+#define		MESSAGE_TYPE_MQTT_PUBLISH			1002
+#define		MESSAGE_TYPE_MQTT_ESSAGE			1003
 
 class	MQTTClient : public Object
 {

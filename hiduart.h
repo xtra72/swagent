@@ -12,6 +12,7 @@
 class	HIDUART : public ActiveObject
 {
 public:
+	HIDUART();
 	HIDUART(std::string const& _id, uint16_t _vid, uint16_t _pid, std::string const& _serial = "", Object* _parent = NULL);
 	~HIDUART();
 

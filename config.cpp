@@ -36,19 +36,18 @@ bool	Config::Load(int _argc, char* _argv[])
 	try
 	{
 		std::ifstream	fs(file_name_.c_str());
-		
+	
 		fs.seekg (0, fs.end);
-    	int length = fs.tellg();
+    	int size = fs.tellg();
     	fs.seekg (0, fs.beg);
 
-		char*	buffer = new char[length + 100];
+		std::string		stream;
+		stream.resize(size);
 
-		fs.read(buffer, length);
+		fs.read(&stream[0], size);
 		fs.close();
-
-		settings_ = libjson::parse(buffer);
-
-		delete	buffer;
+		
+		settings_ = libjson::parse(stream);
 	}
 	catch(std::exception e)
 	{

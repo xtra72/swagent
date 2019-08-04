@@ -157,8 +157,13 @@ void 	TimeoutTimer::SetTimeout(uint64_t _delay, ActiveTimerCallback _function, v
 ////////////////////////////////////////////////////////////////////////////////////
 // class	IntervalTimer
 ////////////////////////////////////////////////////////////////////////////////////
-void IntervalTimer::SetInterval(uint64_t _interval, ActiveTimerCallback _function, void * _params) 
+bool	IntervalTimer::SetInterval(uint64_t _interval, ActiveTimerCallback _function, void * _params, bool _start_after_call) 
 {
+	if (_function == NULL)
+	{
+		return	false;
+	}
+
 	if (this->thread_)
 	{
 		if (this->run_)
@@ -184,10 +189,7 @@ void IntervalTimer::SetInterval(uint64_t _interval, ActiveTimerCallback _functio
 
 	this->run_ = true;
 	this->clear_ = false;
-	if (_function)
-	{
-		this->function_ = _function;
-	}
+	this->function_ = _function;
 
 	if (_params)
 	{
@@ -197,6 +199,11 @@ void IntervalTimer::SetInterval(uint64_t _interval, ActiveTimerCallback _functio
 	this->thread_ = new std::thread([=]() 
 	{ 
 		Date	start_date = Date::GetCurrent();
+
+		if (_start_after_call)
+		{
+			this->function_(this->params_);
+		}
 		while(true) 
 		{
 			if(this->clear_) 
@@ -237,5 +244,7 @@ void IntervalTimer::SetInterval(uint64_t _interval, ActiveTimerCallback _functio
 	});
 
 	this->thread_->detach();
+
+	return	true;
 }
 

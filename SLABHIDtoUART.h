@@ -158,7 +158,7 @@ typedef char HID_UART_DEVICE_STR[HID_UART_DEVICE_STRLEN];
 
 // Read/Write Limits
 #define HID_UART_MIN_READ_SIZE						1
-#define HID_UART_MAX_READ_SIZE						32768
+#define HID_UART_MAX_READ_SIZE						4096
 #define HID_UART_MIN_WRITE_SIZE						1
 #define HID_UART_MAX_WRITE_SIZE						4096
 

@@ -458,7 +458,8 @@ bool	MQTTClient::Publish(Publisher* _publish)
 		}
 
 		_publish->SetMID(mid);
-		TRACE_INFO("PUB[" << mid << "] : " << _publish->Topic() << " " << _publish->Message());
+		TRACE_INFO("PUB[" << mid << "] : " << _publish->Topic());
+		//TRACE_INFO("PUB[" << mid << "] : " << _publish->Topic() << " " << _publish->Message());
 		publish_list_.push_back(_publish);
 	}
 	else 

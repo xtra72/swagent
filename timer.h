@@ -53,7 +53,7 @@ public:
 class IntervalTimer : public ActiveTimer
 {
 public:
-	void 	SetInterval(uint64_t _interval, ActiveTimerCallback _function = NULL, void * _params = NULL);
+	bool	SetInterval(uint64_t _interval, ActiveTimerCallback _function, void * _params = NULL, bool _start_after_call = false);
 };
 
 #endif

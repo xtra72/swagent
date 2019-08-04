@@ -24,6 +24,7 @@ public:
 
 	enum	Level
 	{
+		UNKNOWN = 0,
 		INFO,
 		WARNING,
 		ERROR,
@@ -78,14 +79,15 @@ public:
 
 protected:
 
-			Locker			locker_;
 			TraceMaster&	master_;
 			Object*			object_;
-			State			state_;
 			std::string		class_name_;
+			State			state_;
 			Level			level_;
+			Level			current_level_;
 			bool			continue_;
 			bool			debug_;
+			Locker			locker_;
 			std::string		headline_;
 };
 
@@ -111,6 +113,7 @@ public:
 	uint32_t	GetObjectNameSize()		{	return	object_name_len_;	};
 	uint32_t	GetObjectIDSize()		{	return	object_id_len_;	};
 
+	Trace::Level	GetLevel()				{	return	level_;		}
 	Trace::Output	GetOutput()				{	return	output_;	}
 
 	bool	SetOutputStream(std::ostream* _out);
@@ -122,7 +125,6 @@ protected:
 	void	Write(std::string const& _file, std::string const& _headline, uint32_t _headline_max, std::string const& _log);
 	void	Write(std::string const& _headline, uint32_t _headline_max, std::string const& _log);
 
-	Locker			locker_;
 	std::ostream*	out_;
 	bool			enable_;
 	Trace::Output	output_;
@@ -133,6 +135,7 @@ protected:
 	Trace::Level	level_;
 	bool			continue_;
 	std::string		headline_;
+	Locker			locker_;
 	uint32_t		object_name_len_;
 	uint32_t		object_id_len_;
 	uint32_t		function_name_len_;
@@ -143,18 +146,117 @@ extern	TraceMaster	trace_master;
 extern	Trace		trace;
 extern	Locker		global_locker;
 
-#define	TRACE_INFO(x)	{	global_locker.Lock(); std::ostringstream oss; oss << x; trace.Begin(Trace::INFO, __PRETTY_FUNCTION__, __LINE__) << oss.str() << Trace::End; global_locker.Unlock(); }
-#define	TRACE_WARN(x)	{	global_locker.Lock(); std::ostringstream oss; oss << x; trace.Begin(Trace::WARNING, __PRETTY_FUNCTION__, __LINE__) << oss.str() << Trace::End; global_locker.Unlock(); }
-#define	TRACE_ERROR(x)	{	global_locker.Lock(); std::ostringstream oss; oss << x; trace.Begin(Trace::ERROR, __PRETTY_FUNCTION__, __LINE__) << oss.str() << Trace::End; global_locker.Unlock(); }
-#define	TRACE_CRITICAL	{	global_locker.Lock(); std::ostringstream oss; oss << x; trace.Begin(Trace::CRITICAL, __PRETTY_FUNCTION__, __LINE__) << oss.str() << Trace::End; global_locker.Unlock(); }
-#define	TRACE_INFO_DUMP(buffer, len)	{	::trace.Dump(Trace::INFO, __PRETTY_FUNCTION__, __LINE__, buffer, len) << Trace::End;	}
-#define	TRACE_INFO_JSON(x)	{	JSONNode json = libjson::parse(x); ::trace.Begin(Trace::INFO, __PRETTY_FUNCTION__, __LINE__) << json.write_formatted() << Trace::End;	}
+#define	TRACE_INFO(x)	\
+{	\
+	if (trace.GetLevel() <= Trace::INFO) \
+	{ \
+		global_locker.Lock(); \
+		std::ostringstream oss; \
+		oss << x; \
+		trace.Begin(Trace::INFO, __PRETTY_FUNCTION__, __LINE__) << oss.str() << Trace::End; \
+		global_locker.Unlock(); \
+	}\
+}
+#define	TRACE_WARN(x)\
+{\
+	if (trace.GetLevel() <= Trace::WARNING)\
+	{ \
+		global_locker.Lock(); \
+		std::ostringstream oss; \
+		oss << x; \
+		trace.Begin(Trace::WARNING, __PRETTY_FUNCTION__, __LINE__) << oss.str() << Trace::End; \
+		global_locker.Unlock(); \
+	}\
+}
+#define	TRACE_ERROR(x)\
+{	\
+	if (trace.GetLevel() <= Trace::ERROR) \
+	{\
+		global_locker.Lock(); \
+		std::ostringstream oss; \
+		oss << x; \
+		trace.Begin(Trace::ERROR, __PRETTY_FUNCTION__, __LINE__) << oss.str() << Trace::End; \
+		global_locker.Unlock();\
+	}\
+}
+#define	TRACE_CRITICAL(x)\
+{\
+	if (trace.GetLevel() <= Trace::CRITICAL)\
+	{\
+		global_locker.Lock();\
+		std::ostringstream oss;\
+		oss << x;\
+		trace.Begin(Trace::CRITICAL, __PRETTY_FUNCTION__, __LINE__) << oss.str() << Trace::End;\
+		global_locker.Unlock();\
+	}\
+}
+#define	TRACE_INFO_DUMP(buffer, len)\
+{\
+	if (trace.GetLevel() <= Trace::INFO)\
+	{\
+		trace.Dump(Trace::INFO, __PRETTY_FUNCTION__, __LINE__, buffer, len) << Trace::End;\
+	}\
+}
 
-#define	TRACE_INFO2(x, y)	{	global_locker.Lock(); std::ostringstream oss; oss << y; ::trace.Begin(Trace::INFO, __PRETTY_FUNCTION__, __LINE__, x) << oss.str() << Trace::End; global_locker.Unlock();}
-#define	TRACE_WARN2(x, y)	{	global_locker.Lock(); std::ostringstream oss; oss << y; ::trace.Begin(Trace::WARNING, __PRETTY_FUNCTION__, __LINE__, x) << oss.str() << Trace::End; global_locker.Unlock();}
-#define	TRACE_ERROR2(x, y)	{	global_locker.Lock(); std::ostringstream oss; oss << y; ::trace.Begin(Trace::ERROR, __PRETTY_FUNCTION__, __LINE__, x) << oss.str() << Trace::End; global_locker.Unlock();}
-#define	TRACE_CRITICAL2(x, y){	::trace.Begin(Trace::CRITICAL, __PRETTY_FUNCTION__, __LINE__, x) << y << Trace::End; }
-#define	TRACE_INFO_DUMP2(x, buffer, len)	{	::trace.Dump(Trace::INFO, __PRETTY_FUNCTION__, __LINE__, x, buffer, len) << Trace::End;	}
+#define	TRACE_INFO_JSON(x)\
+{\
+	if (::trace.GetLevel() <= Trace::INFO)\
+	{\
+		JSONNode json = libjson::parse(x);\
+		::trace.Begin(Trace::INFO, __PRETTY_FUNCTION__, __LINE__) << json.write_formatted() << Trace::End;\
+	}\
+}
+
+#define	TRACE_INFO2(x, y)\
+{\
+	if (::trace.GetLevel() <= Trace::INFO)\
+	{\
+		global_locker.Lock();\
+		std::ostringstream oss;\
+		oss << y;\
+		::trace.Begin(Trace::INFO, __PRETTY_FUNCTION__, __LINE__, x) << oss.str() << Trace::End;\
+		global_locker.Unlock();\
+	}\
+}
+
+#define	TRACE_WARN2(x, y)\
+{\
+	if (::trace.GetLevel() <= Trace::INFO)\
+	{\
+		global_locker.Lock();\
+		std::ostringstream oss;\
+		oss << y;\
+		::trace.Begin(Trace::WARNING, __PRETTY_FUNCTION__, __LINE__, x) << oss.str() << Trace::End;\
+		global_locker.Unlock();\
+	}\
+}
+
+#define	TRACE_ERROR2(x, y)\
+{\
+	if (::trace.GetLevel() <= Trace::INFO)\
+	{\
+		global_locker.Lock();\
+		std::ostringstream oss;\
+		oss << y; ::trace.Begin(Trace::ERROR, __PRETTY_FUNCTION__, __LINE__, x) << oss.str() << Trace::End;\
+		global_locker.Unlock();\
+	}\
+}
+
+#define	TRACE_CRITICAL2(x, y)\
+{\
+	if (::trace.GetLevel() <= Trace::INFO)\
+	{\
+		::trace.Begin(Trace::CRITICAL, __PRETTY_FUNCTION__, __LINE__, x) << y << Trace::End;\
+	}\
+}
+
+#define	TRACE_INFO_DUMP2(x, buffer, len)\
+{\
+	if (::trace.GetLevel() <= Trace::INFO)\
+	{\
+		::trace.Dump(Trace::INFO, __PRETTY_FUNCTION__, __LINE__, x, buffer, len) << Trace::End;\
+	}\
+}
 
 
 #define	TRACE_CREATE	TRACE_INFO("Create : " << this->GetClassName())
