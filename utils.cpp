@@ -317,6 +317,71 @@ bool	StringToUint8(std::string const& _string ,uint8_t* _array, uint32_t _max_le
 	return	true;
 }
 
+bool	StringToUint32(std::string const& _string, uint32_t& _value)
+{
+	if (10 < _string.length())
+	{
+		return	false;
+	}
+
+	for(uint32_t i = 0 ; i < _string.length() ; i++)
+	{
+		if ((_string[i] < '0') || ('9' < _string[i]))
+		{
+			return	false;
+		}
+	}
+
+	_value = strtoul(_string.c_str(), 0, 10);
+
+	return	true;
+}
+
+bool	StringToUint32(char* _string, uint32_t& _value)
+{
+	if (_string == NULL)
+	{
+		return	false;
+	}
+
+	while(*_string != 0)
+	{
+		if (!isspace(*_string))
+		{
+			break;
+		}
+		_string++;
+	}
+
+	char*	ptr = _string;
+	while(*ptr != 0)
+	{
+		if (isspace(*_string))
+		{
+			*ptr = 0;
+			break;
+		}
+		ptr++;
+	}
+
+
+	if (10 < strlen(_string))
+	{
+		return	false;
+	}
+
+	for(uint32_t i = 0 ; i < strlen(_string) ; i++)
+	{
+		if ((_string[i] < '0') || ('9' < _string[i]))
+		{
+			return	false;
+		}
+	}
+
+	_value = strtoul(_string, 0, 10);
+
+	return	true;
+}
 
 std::vector<std::string> split(const std::string& s, char delimiter)
 {

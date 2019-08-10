@@ -72,7 +72,7 @@ void	HIDUART::Preprocess()
 			TRACE_ERROR("Failed setting UART config: " << DecodeHidUartStatus(status).c_str());
 		}
     
-		status = HidUart_SetTimeouts(this->uart_, 0, 1000);
+		status = HidUart_SetTimeouts(this->uart_, 1000, 1000);
 	}
 
 }

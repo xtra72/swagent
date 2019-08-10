@@ -3,22 +3,28 @@
 		"id" : "A00112233",
 		"node" : [
 			{
-				"id" : "01234567",
-<<<<<<< HEAD
-				"serial_id" : "0065DEEF",
+				"id" : "01234568",
+				"serial_id" : "0065DEF4",
 				"channel_count" : 8,
-				"frequency" : 915000000,
+				"frequency" : 922100000,
 				"power" : 18,
 				"trace" : 
 				{
-					"enable":false
+					"enable":true,
+					"dump":false
 				}
-=======
-				"serial_id" : "0065DEE6",
+			},
+			{
+				"id" : "01234567",
+				"serial_id" : "0065DEEF",
 				"channel_count" : 8,
-				"frequency" : 915000000,
-				"power" : 18
->>>>>>> acea361132e0c1f7384c7983fcbb0cae2f6080a9
+				"frequency" : 920000000,
+				"power" : 18,
+				"trace" : 
+				{
+					"enable":true,
+					"dump": false
+				}
 			}
 		],
 		"server" : {

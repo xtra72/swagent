@@ -268,6 +268,7 @@ public:
 		bool	OnPlusData(std::string const& _node_id, char* _data);
 		bool	OnPlusLog(std::string const& _node_id, char* _log);
 		bool	OnStat(std::string const &_node_id, char* _stat);
+		bool	OnStarted(std::string const &_node_id, char* _result);
 		bool	OnServerRequest(std::string const& _message);
 		bool	OnReceived(Message* _message);
 		bool	OnContractResponse(std::string const& _message);
@@ -301,6 +302,7 @@ protected:
 	static	bool	OnMessageConnectedCallback(ActiveObject *_object, Message* _message);
 	static	bool	OnMessageDisconnectedCallback(ActiveObject *_object, Message* _message);
 	static	bool	OnMessageDataCallback(ActiveObject *_object, Message* _message);
+	static	bool	OnMessageDataCallback2(ActiveObject *_object, Message* _message);
 	static	bool	OnMessageMotionDetectedCallback(ActiveObject *_object, Message* _message);
 	static	bool	OnMessageConfirmCallback(ActiveObject *_object, Message* _message);
 	static	bool	OnMessageRequestContractCallback(ActiveObject *_object, Message* _message);

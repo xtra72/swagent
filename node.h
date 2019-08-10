@@ -42,11 +42,16 @@ public:
 	Node(JSONNode const& _config, Object* _parent = NULL);
 	Node(std::string const& _id, Object* _parent = NULL);
 
+			bool		RFStart(void);
+			bool		Reset(void);
+
 			bool		IsContracted(void);
 			bool		SetContract(bool _contract);
 
 			uint32_t	GetChannelCount(void);
 			bool		SetChannelCount(uint32_t _channel_count);
+
+			bool		SetConfig(void);
 
 			uint32_t	GetFrequency(void);
 			bool		SetFrequency(uint32_t _frequency);
@@ -55,6 +60,9 @@ public:
 			bool		SetPower(uint32_t _power);
 
 			int32_t		GetRSSI(void);
+
+			bool		GetLog(void);
+			bool		SetLog(bool _enable);
 
 			bool		RequestStat(void);
 
@@ -68,6 +76,7 @@ public:
 			bool		Downlink(uint8_t* data, uint32_t length);
 			bool		OnData(uint8_t* data, uint32_t length);
 			bool		OnStat(char* _stat);
+			bool		OnStarted(char* _stat);
 	virtual	bool		OnRead(uint8_t* _data, uint32_t _length);
 	virtual	bool		OnWrite(uint8_t* _data, uint32_t _length);
 
@@ -85,6 +94,7 @@ protected:
 	bool				contracted_;
 	uint32_t			last_update_time_;
 	int32_t				rssi_;
+	bool				log_;
 
 	virtual	void	Preprocess();
 

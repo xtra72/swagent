@@ -24,6 +24,9 @@ bool	HexStringToUint64(std::string const& _string, uint64_t& _value);
 bool	StringToUint64(std::string const& _string ,uint64_t& _number);
 bool	StringToUint8(std::string const& _string ,uint8_t* _array, uint32_t _max_length, uint32_t& _length);
 
+bool	StringToUint32(std::string const& _string, uint32_t& value);
+bool	StringToUint32(char* _string, uint32_t& value);
+
 std::vector<std::string> split(const std::string& s, char delimiter);
 
 #endif

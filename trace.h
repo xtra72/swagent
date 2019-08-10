@@ -25,6 +25,7 @@ public:
 	enum	Level
 	{
 		UNKNOWN = 0,
+		DEBUG,
 		INFO,
 		WARNING,
 		ERROR,
@@ -58,6 +59,9 @@ public:
 			void	SetDebug(bool _debug);
 			bool	GetDebug();
 
+			void	SetDumpEnable(bool _enable);
+			bool	GetDumpEnable();
+
 	static	void	SetDefaultDebug(bool _debug);
 	static	bool	GetDefaultDebug();
 
@@ -87,6 +91,7 @@ protected:
 			Level			current_level_;
 			bool			continue_;
 			bool			debug_;
+			bool			dump_;
 			Locker			locker_;
 			std::string		headline_;
 };
@@ -146,6 +151,17 @@ extern	TraceMaster	trace_master;
 extern	Trace		trace;
 extern	Locker		global_locker;
 
+#define	TRACE_DEBUG(x)	\
+{	\
+	if (trace.GetLevel() <= Trace::DEBUG) \
+	{ \
+		global_locker.Lock(); \
+		std::ostringstream oss; \
+		oss << x; \
+		trace.Begin(Trace::DEBUG, __PRETTY_FUNCTION__, __LINE__) << oss.str() << Trace::End; \
+		global_locker.Unlock(); \
+	}\
+}
 #define	TRACE_INFO(x)	\
 {	\
 	if (trace.GetLevel() <= Trace::INFO) \
@@ -190,6 +206,15 @@ extern	Locker		global_locker;
 		global_locker.Unlock();\
 	}\
 }
+
+#define	TRACE_DEBUG_DUMP(buffer, len)\
+{\
+	if (trace.GetLevel() <= Trace::DEBUG)\
+	{\
+		trace.Dump(Trace::DEBUG, __PRETTY_FUNCTION__, __LINE__, buffer, len) << Trace::End;\
+	}\
+}
+
 #define	TRACE_INFO_DUMP(buffer, len)\
 {\
 	if (trace.GetLevel() <= Trace::INFO)\
@@ -204,6 +229,18 @@ extern	Locker		global_locker;
 	{\
 		JSONNode json = libjson::parse(x);\
 		::trace.Begin(Trace::INFO, __PRETTY_FUNCTION__, __LINE__) << json.write_formatted() << Trace::End;\
+	}\
+}
+
+#define	TRACE_DEBUG2(x, y)\
+{\
+	if (::trace.GetLevel() <= Trace::DEBUG)\
+	{\
+		global_locker.Lock();\
+		std::ostringstream oss;\
+		oss << y;\
+		::trace.Begin(Trace::DEBUG, __PRETTY_FUNCTION__, __LINE__, x) << oss.str() << Trace::End;\
+		global_locker.Unlock();\
 	}\
 }
 

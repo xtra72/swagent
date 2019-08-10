@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "node.h"
 #include "message.h"
 #include "utils.h"
@@ -9,7 +10,7 @@ Node::Node()
 }
 
 Node::Node(JSONNode const& _config, Object* _parent)
-: CP2110("", _parent), frequency_(915000000), power_(18), contracted_(false), last_update_time_(0), rssi_(-200)
+: CP2110("", _parent), frequency_(915000000), power_(18), contracted_(false), last_update_time_(0), rssi_(-200), log_(false)
 {
 	properties_map_["channel_count"] = SetChannelCount;
 	properties_map_["frequency"] = SetFrequency;
@@ -19,7 +20,7 @@ Node::Node(JSONNode const& _config, Object* _parent)
 }
 
 Node::Node(std::string const& _id, Object* _parent)
-: CP2110(_id, _parent), frequency_(915000000), power_(18), contracted_(false), last_update_time_(0), rssi_(-200)
+: CP2110(_id, _parent), frequency_(915000000), power_(18), contracted_(false), last_update_time_(0), rssi_(-200), log_(false)
 {
 	properties_map_["channel_count"] = SetChannelCount;
 	properties_map_["frequency"] = SetFrequency;
@@ -31,11 +32,51 @@ void	Node::Preprocess()
 	CP2110::Preprocess();
 
 
+	//Reset();
+	TRACE_INFO("Preprocess");
+	usleep(1000);
+
+	RFStart();
+}
+
+bool	Node::RFStart(void)
+{
+	TRACE_INFO("Start");
+
 	std::ostringstream	cmd;
 
-	cmd << "AT+START:";
+	cmd << "AT+START:FREQ=" << frequency_;
+	cmd << ",POW=" << power_;
 	
-	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
+	return	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
+}
+
+bool	Node::Reset(void)
+{
+	TRACE_INFO("Reset");
+
+	std::ostringstream	cmd;
+
+	cmd << "AT+RESET:0";
+	
+	return	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
+}
+
+bool	Node::GetLog(void)
+{
+	return	log_;
+}
+
+bool	Node::SetLog(bool _enable)
+{
+	log_ = _enable;
+	TRACE_INFO("Set Log : " << ((log_)?"ON":"OFF"));
+
+	std::ostringstream	cmd;
+
+	cmd << "AT+CFG:LOG=" << ((log_)?"ON":"OFF");
+	
+	return	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
 }
 
 bool	Node::IsContracted(void)
@@ -46,6 +87,20 @@ bool	Node::IsContracted(void)
 bool	Node::SetContract(bool _contract)
 {
 	return	contracted_ = _contract;
+}
+
+bool		Node::SetConfig(void)
+{
+	TRACE_INFO("Set Config : " << frequency_ << ", " << power_);
+
+	std::ostringstream	cmd;
+
+	cmd << "AT+CFG:FREQ=" << frequency_;
+	cmd << ",POW=" << power_;
+	
+	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
+
+	return	true;
 }
 
 uint32_t	Node::GetFrequency(void)
@@ -60,7 +115,7 @@ bool	Node::SetFrequency(uint32_t _frequency)
 
 	std::ostringstream	cmd;
 
-	cmd << "AT+CFG:FREQ=" << _frequency;
+	cmd << "AT+CFG:FREQ=" << frequency_;
 	
 	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
 
@@ -76,6 +131,12 @@ bool	Node::SetPower(uint32_t _power)
 {
 	power_ = _power;
 	TRACE_INFO("Set Power  : " << _power);
+
+	std::ostringstream	cmd;
+
+	cmd << "AT+CFG:POW=" << power_;
+	
+	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
 
 	return	true;
 }
@@ -354,7 +415,7 @@ bool	Node::Downlink(uint8_t* data, uint32_t length)
 		uint8_t	hi = (data[i] >> 4) & 0x0F;
 		uint8_t	lo = (data[i]     ) & 0x0F;
 
-		if (hi < 9)
+		if (hi < 10)
 		{
 			cmd << (char)(hi + '0');
 		}
@@ -367,7 +428,7 @@ bool	Node::Downlink(uint8_t* data, uint32_t length)
 			return	false;
 		}
 
-		if (lo < 9)
+		if (lo < 10)
 		{
 			cmd << (char)(lo + '0');
 		}
@@ -393,8 +454,8 @@ bool	Node::OnRead(uint8_t* _data, uint32_t _length)
 		ActiveObject*	active_object = dynamic_cast<ActiveObject*>(parent_);
 		if (active_object)
 		{
-			TRACE_INFO("OnRead : Post Message - Dest = " << parent_->GetID() << ", Length = " << _length);
-			TRACE_INFO_DUMP(_data,_length);
+			TRACE_DEBUG("OnRead : Post Message - Dest = " << parent_->GetID() << ", Length = " << _length);
+			TRACE_DEBUG_DUMP(_data,_length);
 			active_object->Post(new MessagePacketReceived(parent_->GetID(), id_, _data, _length));
 		}
 		else
@@ -749,7 +810,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 						battery |= (uint32_t)(data[11]      );
 					}
 
-					Message*	message = new Agent::MessageKeepAlive(agent->GetID(), agent->GetID(), GetID(), battery / 100.0);
+					Message*	message = new Agent::MessageKeepAlive(agent->GetID(), agent->GetID(), GetID(), (battery / 100) / 10.0);
 				
 					TRACE_INFO("Keep Alive: " << GetID());
 					if (!agent->Post(message))
@@ -799,4 +860,18 @@ bool	Node::OnStat(char* _stat)
 	}
 
 	return	false;
+}
+
+bool	Node::OnStarted(char* _result)
+{
+	if (strcasecmp(_result, "OK") == 0)
+	{
+		TRACE_INFO("Successfully Started!");
+	}
+	else
+	{
+		TRACE_INFO("Starting failed! : " << ((_result != NULL)?_result:""));
+	}
+
+	return	true;
 }

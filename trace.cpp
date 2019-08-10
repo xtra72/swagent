@@ -15,7 +15,7 @@ static	Trace::Level	level_ = Trace::WARNING;
 static	bool			debug_ = true;
 
 Trace::Trace(Object* _object)
-: master_(trace_master), object_(_object), class_name_(""), state_(ENABLE), level_(Trace::UNKNOWN), current_level_(Trace::UNKNOWN), continue_(false), debug_(::debug_), locker_()
+: master_(trace_master), object_(_object), class_name_(""), state_(ENABLE), level_(Trace::UNKNOWN), current_level_(Trace::UNKNOWN), continue_(false), debug_(::debug_), dump_(false), locker_()
 {
 }
 
@@ -30,18 +30,16 @@ bool	Trace::SetClassName(std::string const& _class_name)
 	return	true;
 }
 
-bool	Trace::Set(JSONNode const& _settings)
-{
-	bool	debug = false;
 
-	if (GetMemberValue(_settings, "debug",debug))
-	{
-		debug_ = debug;
-	}
+bool	Trace::Set(JSONNode const& _value)
+{
+	GetMemberValue(_value, "debug", debug_);
+	GetMemberValue(_value, "dump", dump_);
 
 	return	true;
 }
 
+	
 bool	Trace::GetEnable()
 {
 	if(state_ == ENABLE)
@@ -113,6 +111,16 @@ void	Trace::SetDebug(bool _debug)
 bool	Trace::GetDebug()
 {
 	return	debug_;
+}
+
+void	Trace::SetDumpEnable(bool _enable)
+{
+	dump_ = _enable;
+}
+
+bool	Trace::GetDumpEnable()
+{
+	return	dump_;
 }
 
 void	Trace::SetDefaultDebug(bool _debug)
@@ -204,6 +212,7 @@ Trace& Trace::Begin(Level _level, std::string const& _pretty_function, uint32_t 
 	switch(current_level_)
 	{
 	case	UNKNOWN:	os << "[UNKN]"; break;
+	case	DEBUG:	os << "[DEBG]"; break;
 	case	INFO:	os << "[INFO]"; break;
 	case	WARNING:os << "[\033[1;33mWARN\033[0m]"; break;
 	case	ERROR:	os << "[\033[0;31mERRO\033[0m]"; break;
@@ -230,42 +239,44 @@ Trace&	Trace::Dump(Level _level, std::string const& _pretty_function, uint32_t l
 {
 	bool	binary_message = false;
 
-	try
+	if (dump_)
 	{
-		if (libjson::is_valid((char *)_buffer))
+		try
 		{
-			JSONNode	json = libjson::parse((char *)_buffer);
+			if (libjson::is_valid((char *)_buffer))
+			{
+				JSONNode	json = libjson::parse((char *)_buffer);
 
-			Begin(_level, _pretty_function, line) << json.write_formatted() << Trace::End;
+				Begin(_level, _pretty_function, line) << json.write_formatted() << Trace::End;
+			}
+			else
+			{
+				binary_message = true;
+			}
 		}
-		else
+		catch(std::invalid_argument)
 		{
 			binary_message = true;
 		}
-	}
-	catch(std::invalid_argument)
-	{
-		binary_message = true;
-	}
 
-	if (binary_message)
-	{
-		for(uint32_t i = 0 ; i < _length ; i++)
+		if (binary_message)
 		{
-			if ((i % 16) == 0)
+			for(uint32_t i = 0 ; i < _length ; i++)
 			{
-				Begin(_level, _pretty_function, line) << std::hex << std::setw(4) << std::setfill('0') << i << " : ";
-			}
+				if ((i % 16) == 0)
+				{
+					Begin(_level, _pretty_function, line) << std::hex << std::setw(4) << std::setfill('0') << i << " : ";
+				}
 
-			Begin(_level, _pretty_function, line) << std::hex << std::setw(2) << std::setfill('0') << (int)((uint8_t *)_buffer)[i] << " ";
-			if ((i + 1) % 16 == 0)
-			{
-				Begin(_level, _pretty_function, line) << std::oct << Trace::End;	
+				Begin(_level, _pretty_function, line) << std::hex << std::setw(2) << std::setfill('0') << (int)((uint8_t *)_buffer)[i] << " ";
+				if ((i + 1) % 16 == 0)
+				{
+					Begin(_level, _pretty_function, line) << std::oct << Trace::End;	
+				}
 			}
+			Begin(_level, _pretty_function, line) << std::oct << Trace::End;	
 		}
-		Begin(_level, _pretty_function, line) << std::oct << Trace::End;	
 	}
-
 	return	*this;
 }
 
