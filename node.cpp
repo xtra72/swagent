@@ -36,7 +36,7 @@ void	Node::Preprocess()
 
 	trace.SetDebug(true);
 	//Reset();
-	TRACE_INFO("Preprocess");
+	TRACE_DEBUG("Preprocess");
 	usleep(1000);
 
 	RFStart();
@@ -44,7 +44,7 @@ void	Node::Preprocess()
 
 bool	Node::RFStart(void)
 {
-	TRACE_INFO("Start");
+	TRACE_DEBUG("Start");
 
 	std::ostringstream	cmd;
 
@@ -65,7 +65,7 @@ bool	Node::RFStart(void)
 
 bool	Node::Reset(void)
 {
-	TRACE_INFO("Reset");
+	TRACE_DEBUG("Reset");
 
 	std::ostringstream	cmd;
 
@@ -82,7 +82,7 @@ bool	Node::GetLog(void)
 bool	Node::SetLog(bool _enable)
 {
 	log_ = _enable;
-	TRACE_INFO("Set Log : " << ((log_)?"ON":"OFF"));
+	TRACE_DEBUG("Set Log : " << ((log_)?"ON":"OFF"));
 
 	std::ostringstream	cmd;
 
@@ -103,7 +103,7 @@ bool	Node::SetContract(bool _contract)
 
 bool		Node::SetConfig(void)
 {
-	TRACE_INFO("Set Config : " << frequency_ << ", " << power_);
+	TRACE_DEBUG("Set Config : " << frequency_ << ", " << power_);
 
 	std::ostringstream	cmd;
 
@@ -131,7 +131,7 @@ uint32_t	Node::GetFrequency(void)
 bool	Node::SetFrequency(uint32_t _frequency)
 {
 	frequency_ = _frequency;
-	TRACE_INFO("Set Frequency : " << _frequency);
+	TRACE_DEBUG("Set Frequency : " << _frequency);
 
 	std::ostringstream	cmd;
 
@@ -150,7 +150,7 @@ uint32_t	Node::GetPower(void)
 bool	Node::SetPower(uint32_t _power)
 {
 	power_ = _power;
-	TRACE_INFO("Set Power  : " << _power);
+	TRACE_DEBUG("Set Power  : " << _power);
 
 	std::ostringstream	cmd;
 
@@ -169,7 +169,7 @@ bool	Node::GetEncoder(void)
 bool	Node::SetEncoder(bool _enable)
 {
 	encoder_ = _enable;
-	TRACE_INFO("Set Encoder : " << ((encoder_)?"ON":"OFF"));
+	TRACE_DEBUG("Set Encoder : " << ((encoder_)?"ON":"OFF"));
 
 	std::ostringstream	cmd;
 
@@ -182,7 +182,7 @@ bool	Node::SetEncoder(bool _enable)
 
 bool	Node::SetEncoder(uint32_t _count, uint32_t _mid)
 {
-	TRACE_INFO("Set Encoder : " << _count);
+	TRACE_DEBUG("Set Encoder : " << _count);
 
 	std::ostringstream	cmd;
 
@@ -201,8 +201,8 @@ uint32_t	Node::GetChannelCount(void)
 bool	Node::SetChannelCount(uint32_t _count)
 {
 	channel_data_.resize(_count);
-	TRACE_INFO("Set Channel Count : " << _count);
-	TRACE_INFO("channel_dta_.size() : " << channel_data_.size());
+	TRACE_DEBUG("Set Channel Count : " << _count);
+	TRACE_DEBUG("channel_dta_.size() : " << channel_data_.size());
 
 	return	true;
 }
@@ -278,7 +278,7 @@ bool	Node::Command(bool scan, bool trans)
 {
 	if (!contracted_)
 	{
-		TRACE_INFO("Node is not contracted!");
+		TRACE_DEBUG("Node is not contracted!");
 		return	false;
 	}
 
@@ -477,7 +477,7 @@ bool	Node::Downlink(uint8_t* data, uint32_t length)
 {
 	std::ostringstream	cmd;
 
-	TRACE_INFO("Downlink");
+	TRACE_DEBUG("Downlink");
 	cmd << "AT+DL:" << id_ << ",";
 	for(uint32_t i = 0 ; i < length ; i++	)
 	{
@@ -523,19 +523,19 @@ bool	Node::OnRead(uint8_t* _data, uint32_t _length)
 		ActiveObject*	active_object = dynamic_cast<ActiveObject*>(parent_);
 		if (active_object)
 		{
-			//TRACE_INFO("OnRead : Post Message - Dest = " << parent_->GetID() << ", Length = " << _length);
-			//TRACE_INFO("OnRead : " << (char *)_data);
-			//TRACE_INFO_DUMP(_data,_length);
+			//TRACE_DEBUG("OnRead : Post Message - Dest = " << parent_->GetID() << ", Length = " << _length);
+			//TRACE_DEBUG("OnRead : " << (char *)_data);
+			//TRACE_DEBUG_DUMP(_data,_length);
 			active_object->Post(new MessagePacketReceived(parent_->GetID(), id_, _data, _length));
 		}
 		else
 		{
-			TRACE_INFO("Parent is not active object!");
+			TRACE_DEBUG("Parent is not active object!");
 		}
 	}
 	else
 	{
-		TRACE_INFO("Parent is not exist!");
+		TRACE_DEBUG("Parent is not exist!");
 	}
 
 	return	true;
@@ -611,7 +611,7 @@ bool	Node::OnWrite(uint8_t* _data, uint32_t _length)
 	uint32_t	writeLength = 0, writeLength2 = 0;
 	uint8_t		newline[1] = { '\n'};
 	
-	TRACE_INFO("OnWrite(" << (char *)_data << ")");
+	TRACE_DEBUG("OnWrite(" << (char *)_data << ")");
 	HidUart_Write(uart_, _data, _length, &writeLength);
 	HidUart_Write(uart_, newline, 1, &writeLength2);
 
@@ -666,7 +666,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				
 					contract_request_mid_ = message->GetID();
 
-					TRACE_INFO("Request Contract : " << contract_request_mid_ << ", " << GetID() << ", " << GetChannelCount());
+					TRACE_DEBUG("Request Contract : " << contract_request_mid_ << ", " << GetID() << ", " << GetChannelCount());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -683,7 +683,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageMotionDetectionStarted(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("MOtion Detection Started : " << GetID());
+					TRACE_DEBUG("MOtion Detection Started : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -699,7 +699,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageMotionDetectionAlreadyStarted(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("MOtion Detection already Started : " << GetID());
+					TRACE_DEBUG("MOtion Detection already Started : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -715,7 +715,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageMotionDetectionStopped(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("MOtion Detection Stopped : " << GetID());
+					TRACE_DEBUG("MOtion Detection Stopped : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -731,7 +731,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageMotionDetectionAlreadyStopped(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("MOtion Detection already stopped : " << GetID());
+					TRACE_DEBUG("MOtion Detection already stopped : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -742,14 +742,14 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 
 		case	MSG_TYPE_MOTION_DETECTED:
 			{
-				TRACE_INFO("Motion Detected received!");
+				TRACE_DEBUG("Motion Detected received!");
 
 				Agent*	agent = dynamic_cast<Agent*>(parent_);
 				if (agent != NULL)
 				{
 					Agent::MessageMotionDetected*	message = new Agent::MessageMotionDetected(agent->GetID(), agent->GetID(), GetID());
 
-					TRACE_INFO("Notify motion detected : " << GetID());
+					TRACE_DEBUG("Notify motion detected : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -769,7 +769,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageScanStarted(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("Scan Started : " << GetID());
+					TRACE_DEBUG("Scan Started : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -785,7 +785,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageScanAlreadyStarted(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("Scan already Started : " << GetID());
+					TRACE_DEBUG("Scan already Started : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -801,7 +801,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageScanStopped(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("Scan Stopped : " << GetID());
+					TRACE_DEBUG("Scan Stopped : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -817,7 +817,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageScanAlreadyStopped(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("Scan already stopped : " << GetID());
+					TRACE_DEBUG("Scan already stopped : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -833,7 +833,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageTransStarted(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("Trans Started : " << GetID());
+					TRACE_DEBUG("Trans Started : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -849,7 +849,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageTransAlreadyStarted(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("Trans already Started : " << GetID());
+					TRACE_DEBUG("Trans already Started : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -865,7 +865,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageTransStopped(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("Trans Stopped : " << GetID());
+					TRACE_DEBUG("Trans Stopped : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -881,7 +881,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageTransAlreadyStopped(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_INFO("Trans already stopped : " << GetID());
+					TRACE_DEBUG("Trans already stopped : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -907,7 +907,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 
 					Message*	message = new Agent::MessageKeepAlive(agent->GetID(), agent->GetID(), GetID(), (battery / 100) / 10.0);
 				
-					TRACE_INFO("Keep Alive: " << GetID());
+					TRACE_DEBUG("Keep Alive: " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -924,7 +924,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 		default:
 			{
 				TRACE_WARN("Invalid port. : " << (uint32_t)data[4]);
-				TRACE_INFO_DUMP(data, length);
+				TRACE_DEBUG_DUMP(data, length);
 			}
 		}
 
@@ -949,7 +949,7 @@ bool	Node::OnStat(char* _stat)
 		if (value != NULL)
 		{
 			rssi_ = strtol(value, 0, 10);
-			TRACE_INFO("RSSI : " << rssi_);
+			TRACE_DEBUG("RSSI : " << rssi_);
 			return	true;
 		}
 	}
@@ -961,11 +961,11 @@ bool	Node::OnStarted(char* _result)
 {
 	if (strcasecmp(_result, "OK") == 0)
 	{
-		TRACE_INFO("Successfully Started!");
+		TRACE_DEBUG("Successfully Started!");
 	}
 	else
 	{
-		TRACE_INFO("Starting failed! : " << ((_result != NULL)?_result:""));
+		TRACE_DEBUG("Starting failed! : " << ((_result != NULL)?_result:""));
 	}
 
 	return	true;

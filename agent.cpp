@@ -269,10 +269,10 @@ void	Agent::Preprocess()
 	TRACE_INFO("Build Time - " << __DATE__ << " " << __TIME__);
 	for(auto node = node_list_.begin(); node != node_list_.end() ; node++)
 	{
-		//TRACE_INFO("Node Reset : " << (*node)->GetID());
+		//TRACE_DEBUG("Node Reset : " << (*node)->GetID());
 		//(*node)->Reset();
 		//usleep(1000000);
-		TRACE_INFO("Node Start : " << (*node)->GetID());
+		TRACE_DEBUG("Node Start : " << (*node)->GetID());
 		(*node)->Start();
 	}
 	client_.Start();
@@ -339,28 +339,28 @@ bool	Agent::OnReceived(Message* _message)
 	if (!token)
 	{
 		TRACE_WARN("Invalid format : " << rxBuffer);
-		TRACE_INFO_DUMP((uint8_t *)rxBuffer, message_packet_received->GetSize());
+		TRACE_DEBUG_DUMP((uint8_t *)rxBuffer, message_packet_received->GetSize());
 		return	false;
 	}
 
 	if (strcasecmp(token, "+DATA") == 0)
 	{
-//		TRACE_INFO("+DATA");
+//		TRACE_DEBUG("+DATA");
 		return	OnPlusData(message_packet_received->GetSender(), token + strlen(token) + 1);
 	}
 	else if (strcasecmp(token, "+LOG") == 0)
 	{
-//		TRACE_INFO("+LOG : " << token + strlen(token) + 1);
+//		TRACE_DEBUG("+LOG : " << token + strlen(token) + 1);
 		return	OnPlusLog(message_packet_received->GetSender(), token + strlen(token) + 1);
 	}
 	else if (strcasecmp(token, "+STAT") == 0)
 	{
-//		TRACE_INFO("+STAT");
+//		TRACE_DEBUG("+STAT");
 		return	OnStat(message_packet_received->GetSender(), token + strlen(token) + 1);
 	}
 	else if (strcasecmp(token, "+ENC") == 0)
 	{
-//		TRACE_INFO("+STAT");
+//		TRACE_DEBUG("+STAT");
 		return	OnEncoder(message_packet_received->GetSender(), token + strlen(token) + 1);
 	}
 	else if (strcasecmp(token, "+START") == 0)
@@ -452,7 +452,7 @@ bool	Agent::OnPlusLog(std::string const &_node_id, char* _log)
 	{
 		if (plus_log_output_)
 		{
-			TRACE_INFO("+LOG : " << _log);
+			TRACE_DEBUG("+LOG : " << _log);
 		}
 	}
 
@@ -512,7 +512,7 @@ bool	Agent::OnServerRequest(std::string const& _message)
 {
 	JSONNode	request;
 
-	TRACE_INFO("On Server Request : " << _message);
+	TRACE_DEBUG("On Server Request : " << _message);
 	try
 	{
 		request = libjson::parse(_message);	
@@ -520,7 +520,7 @@ bool	Agent::OnServerRequest(std::string const& _message)
 	}
 	catch(std::invalid_argument& e)
 	{
-		TRACE_INFO("Invalid request : " << _message);
+		TRACE_DEBUG("Invalid request : " << _message);
 		return	false;
 	}
 
@@ -622,12 +622,12 @@ bool	Agent::SetNode(Object* _object, JSONNode const& _value)
 		return	false;
 	}
 
-	TRACE_INFO2(agent, "Set Node : " << _value.write_formatted());
+	TRACE_DEBUG2(agent, "Set Node : " << _value.write_formatted());
 	for(auto item = _value.begin() ; item != _value.end() ; item++)
 	{
 		Node* node = new Node(*item, agent);
 		agent->node_list_.push_back(node);
-		TRACE_INFO2(agent, "New node[" << node->GetID() << "] added!");
+		TRACE_DEBUG2(agent, "New node[" << node->GetID() << "] added!");
 	}
 
 	return	true;
@@ -820,7 +820,7 @@ bool	Agent::ContractRequestToServer(char* _node_id, uint8_t _channel_count)
 
 			oss_topic << "cwr/mfl/contract/req";
 
-			TRACE_INFO("Contract request : " << _node_id << ", " << (uint32_t)_channel_count);
+			TRACE_DEBUG("Contract request : " << _node_id << ", " << (uint32_t)_channel_count);
 			MQTTClient::Publisher*	pub = new MQTTClient::Publisher(oss_topic.str(), payload);
 			if (!client_.Publish(pub))
 			{
@@ -841,7 +841,7 @@ bool	Agent::OnContractResponse(std::string const& _message)
 	std::string	nid;
 	uint32_t	ts;
 
-	TRACE_INFO("Contract response received!");
+	TRACE_DEBUG("Contract response received!");
 	if (!GetMemberValue(response, "mid", mid))
 	{
 		TRACE_WARN("MID is not exist.");
@@ -873,7 +873,7 @@ bool	Agent::OnContractResponse(std::string const& _message)
 	{
 		if ((*it)->GetID() == nid)
 		{
-			TRACE_INFO("Node[" << nid << "] contracted!");
+			TRACE_DEBUG("Node[" << nid << "] contracted!");
 			(*it)->Contract(ts, 0);
 			return	true;
 		}
@@ -1201,7 +1201,7 @@ bool	Agent::OnMessageDataCallback(ActiveObject *_object, Message* _message)
 		message_time += 2;
 	}
 
-	//TRACE_INFO2(agent, "Data : " << message_data->GetTime() << ", " << message_data->GetLength());
+	//TRACE_DEBUG2(agent, "Data : " << message_data->GetTime() << ", " << message_data->GetLength());
 
 	return	true;
 }
@@ -1309,7 +1309,7 @@ bool	Agent::OnMessageDataCallback2(ActiveObject *_object, Message* _message)
 
 	node->SetLastDataTime(message_data->GetTime());
 
-	//TRACE_INFO2(agent, "Data : " << message_data->GetTime() << ", " << message_data->GetLength());
+	//TRACE_DEBUG2(agent, "Data : " << message_data->GetTime() << ", " << message_data->GetLength());
 
 	return	true;
 }
@@ -1339,7 +1339,7 @@ bool	Agent::OnMessageRequestContractCallback(ActiveObject* _object, Message* _me
 		return	false;
 	}
 
-	TRACE_INFO2(agent, "On Message Request Contract");
+	TRACE_DEBUG2(agent, "On Message Request Contract");
 	Agent::MessageRequestContract *message = dynamic_cast<Agent::MessageRequestContract*>(_message);
 	if (!message)
 	{
@@ -1361,7 +1361,7 @@ bool	Agent::OnMessageRequestContractCallback(ActiveObject* _object, Message* _me
 
 	oss_topic << "cwr/mfl/contract/req";
 
-	TRACE_INFO2(agent, "Contract request : " << payload.write());
+	TRACE_DEBUG2(agent, "Contract request : " << payload.write());
 	MQTTClient::Publisher*	pub = new MQTTClient::Publisher(oss_topic.str(), payload);
 	if (!agent->client_.Publish(pub))
 	{
@@ -1512,7 +1512,7 @@ bool	Agent::OnMessageConnectedCallback(ActiveObject *_object, Message* _message)
 		return	false;
 	}
 
-	TRACE_INFO2(agent, "On Message Connected");
+	TRACE_DEBUG2(agent, "On Message Connected");
 	MQTTClient::MessageConnected *message_connected = dynamic_cast<MQTTClient::MessageConnected*>(_message);
 	if (!message_connected)
 	{

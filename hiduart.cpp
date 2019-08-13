@@ -29,7 +29,7 @@ void	HIDUART::Preprocess()
 
 	loop_interval_ = 100;
 
-	TRACE_INFO("HIDUART serial : " << this->serial_);
+	TRACE_DEBUG("HIDUART serial : " << this->serial_);
     if (this->serial_ != "")
     {
         bool		found = false;
@@ -52,12 +52,12 @@ void	HIDUART::Preprocess()
         
         if (!found)
 		{
-			TRACE_INFO("HIDUART deivce not found!");
+			TRACE_DEBUG("HIDUART deivce not found!");
             return;
 		}
     }
 
-	TRACE_INFO("HIDUART Open : " << index << ", " << this->vid_ << ", " << this->pid_);
+	TRACE_DEBUG("HIDUART Open : " << index << ", " << this->vid_ << ", " << this->pid_);
 	status = HidUart_Open(&this->uart_, index, this->vid_, this->pid_);
     if (status != HID_UART_SUCCESS)
     {
@@ -145,7 +145,7 @@ bool	HIDUART::OnWrite(uint8_t* _data, uint32_t _length)
 
 	uint32_t	writeLength = 0;
 
-	TRACE_INFO("OnWrite(" << (char *)_data << ")");
+	TRACE_DEBUG("OnWrite(" << (char *)_data << ")");
 	HidUart_Write(uart_, _data, _length, &writeLength);
 
 	return	(_length == writeLength);

@@ -190,7 +190,7 @@ MQTTClient::~MQTTClient()
 
 bool	MQTTClient::Init(void)
 {
-	TRACE_INFO("MQTT Client init : " << client_id_.c_str());
+	TRACE_DEBUG("MQTT Client init : " << client_id_.c_str());
 	mosquitto_ = mosquitto_new(client_id_.c_str(), true, (void *)this);
 
 	mosquitto_max_inflight_messages_set(mosquitto_, 20);
@@ -292,7 +292,7 @@ bool	MQTTClient::Register(Subscriber* subscribe)
 	}
 
 	subscribe_map_[subscribe->Topic()] = subscribe;
-	TRACE_INFO("Subscribe registered : " << subscribe->Topic());
+	TRACE_DEBUG("Subscribe registered : " << subscribe->Topic());
 
 	return	true;
 }
@@ -318,7 +318,7 @@ void	MQTTClient::Start()
 	}
 	else
 	{
-		TRACE_INFO("Thread started!");
+		TRACE_DEBUG("Thread started!");
 	}
 }
 
@@ -373,8 +373,8 @@ bool	MQTTClient::Connect()
 		{
 			if((username_.length() != 0) && (password_.length() != 0))
 			{
-				TRACE_INFO("MQTT USERNAME : " << username_);
-				TRACE_INFO("MQTT PASSWORD : " << password_);
+				TRACE_DEBUG("MQTT USERNAME : " << username_);
+				TRACE_DEBUG("MQTT PASSWORD : " << password_);
 				ret = mosquitto_username_pw_set(mosquitto_, username_.c_str(), password_.c_str());
 			}
 
@@ -386,7 +386,7 @@ bool	MQTTClient::Connect()
 				if(ret == MOSQ_ERR_SUCCESS)
 				{
 					mosquitto_tls_opts_set(mosquitto_, 1, NULL, NULL);
-					TRACE_INFO("MQTT TLS SET SUCCESS");
+					TRACE_DEBUG("MQTT TLS SET SUCCESS");
 				}
 				else
 				{
@@ -400,12 +400,12 @@ bool	MQTTClient::Connect()
 			ret = mosquitto_connect(mosquitto_, server_url_.c_str(), server_port_, keep_alive_);
 			if (ret == MOSQ_ERR_SUCCESS)
 			{
-				TRACE_INFO("Broker connected : " << server_url_ << ":" << server_port_);
+				TRACE_DEBUG("Broker connected : " << server_url_ << ":" << server_port_);
 			}
 			else
 			{
 				TRACE_ERROR("Failed to connect to server[" << server_url_ << "] : " << ret);
-				TRACE_INFO("Try Connect to broker.");
+				TRACE_DEBUG("Try Connect to broker.");
 			}
 		}
 		else
@@ -415,12 +415,12 @@ bool	MQTTClient::Connect()
 			ret = mosquitto_reconnect(mosquitto_);
 			if (ret == MOSQ_ERR_SUCCESS)
 			{
-				TRACE_INFO("Broker connected : " << server_url_ << ":" << server_port_);
+				TRACE_DEBUG("Broker connected : " << server_url_ << ":" << server_port_);
 			}
 			else
 			{
 				TRACE_ERROR("Failed to connect to server[" << server_url_ << "] : " << ret);
-				TRACE_INFO("Try Connect to broker.");
+				TRACE_DEBUG("Try Connect to broker.");
 			}
 		}
 	}
@@ -458,13 +458,13 @@ bool	MQTTClient::Publish(Publisher* _publish)
 		}
 
 		_publish->SetMID(mid);
-		TRACE_INFO("PUB[" << mid << "] : " << _publish->Topic());
-		//TRACE_INFO("PUB[" << mid << "] : " << _publish->Topic() << " " << _publish->Message());
+		TRACE_DEBUG("PUB[" << mid << "] : " << _publish->Topic());
+		//TRACE_DEBUG("PUB[" << mid << "] : " << _publish->Topic() << " " << _publish->Message());
 		publish_list_.push_back(_publish);
 	}
 	else 
 	{
-		TRACE_WARN("Server[" << server_url_ << ":" << server_port_ << " not connected");
+		TRACE_DEBUG("Server[" << server_url_ << ":" << server_port_ << " not connected");
 	}
 
 	return	true;
@@ -556,7 +556,7 @@ void	MQTTClient::OnDisconnect(int rc)
 
 void	MQTTClient::OnPublish(int mid)
 {
-	TRACE_INFO("PUB[" << mid << "] : completed.");
+	TRACE_DEBUG("PUB[" << mid << "] : completed.");
 	for(std::list<Publisher*>::iterator it = publish_list_.begin(); it != publish_list_.end() ; it++)
 	{
 		if ((*it)->GetMID() == mid)
@@ -594,7 +594,7 @@ void	MQTTClient::OnMessage(const struct mosquitto_message *_message)
 
 void	MQTTClient::OnLog(int level, const char *str)
 {
-	//TRACE_INFO("Log : " << str);
+	//TRACE_DEBUG("Log : " << str);
 }
 
 

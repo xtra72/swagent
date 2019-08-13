@@ -28,7 +28,7 @@ MessageQueue::MessageQueue(string const& _receiver_id)
 
 	message_queue_map_[receiver_id_] = this;
 
-	TRACE_INFO("Message Queue for " << _receiver_id << " created.");
+	TRACE_DEBUG("Message Queue for " << _receiver_id << " created.");
 }
 
 MessageQueue::~MessageQueue()
@@ -37,7 +37,7 @@ MessageQueue::~MessageQueue()
 	map<string, MessageQueue*>::iterator it = message_queue_map_.find(receiver_id_);
 	if (it != message_queue_map_.end())
 	{
-		TRACE_INFO("Remove message Queue for " << receiver_id_);
+		TRACE_DEBUG("Remove message Queue for " << receiver_id_);
 		message_queue_map_.erase(it);
 	}
 
@@ -154,11 +154,11 @@ bool	MessageQueue::ChangeReceiverID(std::string const& _receiver_id)
 	map<string, MessageQueue*>::iterator it = message_queue_map_.find(receiver_id_);
 	if (it != message_queue_map_.end())
 	{
-		TRACE_INFO("Remove message Queue for " << receiver_id_);
+		TRACE_DEBUG("Remove message Queue for " << receiver_id_);
 		message_queue_map_.erase(it);
 	}
 
-	TRACE_INFO("Message Queue has been renamed from " << receiver_id_ << " to " << _receiver_id);
+	TRACE_DEBUG("Message Queue has been renamed from " << receiver_id_ << " to " << _receiver_id);
 
 	receiver_id_ = _receiver_id;
 	message_queue_map_[receiver_id_] = this;
@@ -176,7 +176,7 @@ bool	MessageQueue::AddAlias(std::string const& _alias_id)
 	}
 
 	alias_map_[_alias_id] = receiver_id_;
-	TRACE_INFO(_alias_id << "is registered as an alias for " << receiver_id_);
+	TRACE_DEBUG(_alias_id << "is registered as an alias for " << receiver_id_);
 
 	return	true;
 }
@@ -186,7 +186,7 @@ bool	MessageQueue::RemoveAlias(std::string const& _alias_id)
 	map<string, string>::iterator it = alias_map_.find(_alias_id);
 	if (it != alias_map_.end())
 	{
-		TRACE_INFO(_alias_id << "has been removed from alias for " << it->second);
+		TRACE_DEBUG(_alias_id << "has been removed from alias for " << it->second);
 		alias_map_.erase(it);
 	}
 
@@ -206,7 +206,7 @@ bool	MessageQueue::AddAlias(std::string const& _receiver_id, std::string const& 
 	}
 
 	alias_map_[_alias_id] = _receiver_id;
-	TRACE_INFO2(NULL, _alias_id << "is registered as an alias for " << _receiver_id);
+	TRACE_DEBUG2(NULL, _alias_id << "is registered as an alias for " << _receiver_id);
 
 	return	true;
 }
@@ -249,7 +249,7 @@ bool	MessageQueue::Post(Message* _message)
 
 	if (global_transaction_trace_)
 	{
-		TRACE_INFO2(NULL, "MSG[" << _message->GetID() << "] : " << sender << " -> " << receiver);
+		TRACE_DEBUG2(NULL, "MSG[" << _message->GetID() << "] : " << sender << " -> " << receiver);
 	}
 
 	it->second->Push(_message);

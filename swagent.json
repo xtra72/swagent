@@ -24,7 +24,7 @@
 				"trace" : 
 				{
 					"enable":true,
-					"level" : "debug",
+					"level" : "info",
 					"dump": true
 				}
 			}
@@ -40,7 +40,7 @@
 	"trace" : {
 		"enable" : true,
 		"dump" : true,
-		"level" : "debug",
+		"level" : "info",
 		"output" : "console"
 	}
 }

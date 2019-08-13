@@ -62,11 +62,11 @@ bool	Config::Find(std::string const& _key, Config& _config)
 	auto item =	settings_.find(_key);
 	if (item == settings_.end())
 	{
-		TRACE_INFO("Not found : " << _key);
+		TRACE_DEBUG("Not found : " << _key);
 		return	false;
 	}
 
-	TRACE_INFO("Found : " << _key << " - " << item->write_formatted());
+	TRACE_DEBUG("Found : " << _key << " - " << item->write_formatted());
 	_config = *item;
 
 	return	true;

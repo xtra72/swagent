@@ -62,7 +62,7 @@ bool	ActiveObject::Start(uint32_t _timeout)	// ms
 				{
 					if (waiting_for_initialization_.TryLock(_timeout))
 					{
-						TRACE_INFO("Started.");
+						TRACE_DEBUG("Started.");
 					}
 					else
 					{
@@ -74,7 +74,7 @@ bool	ActiveObject::Start(uint32_t _timeout)	// ms
         }
         else
         {
-            TRACE_INFO("Already activated.");
+            TRACE_DEBUG("Already activated.");
             ret_value = false;
         }
 
@@ -82,7 +82,7 @@ bool	ActiveObject::Start(uint32_t _timeout)	// ms
     }
     else
     {
-        TRACE_INFO("Exceeded the start initialization time.");
+        TRACE_DEBUG("Exceeded the start initialization time.");
         ret_value = false;
     }
 
@@ -107,13 +107,13 @@ void* ActiveObject::ThreadMain(void* _data)
    	Timer	loop_timer;
 	ActiveObject* object = (ActiveObject*)_data;
 
-	TRACE_INFO2(object, "Thread started.");
+	TRACE_DEBUG2(object, "Thread started.");
 	object->activated_.Lock();
 
-	TRACE_INFO2(object, "Preprocess.");
+	TRACE_DEBUG2(object, "Preprocess.");
 	object->Preprocess();
 	object->stop_ = false;
-	TRACE_INFO2(object, "Initialization completed : " << object->GetID());
+	TRACE_DEBUG2(object, "Initialization completed : " << object->GetID());
 	object->waiting_for_initialization_.Unlock();
 
 	loop_timer.Set(Date::GetCurrent());
@@ -226,7 +226,7 @@ void	ActiveObject::MessageProcess()
 		auto handler = message_handler_map_.find(message->GetType());
 		if (handler != message_handler_map_.end())
 		{
-			//TRACE_INFO("MSG[" << message->GetID() << "] : received - " << message->GetType());
+			//TRACE_DEBUG("MSG[" << message->GetID() << "] : received - " << message->GetType());
 			handler->second(this, message);
 		}
 		else

@@ -49,7 +49,11 @@ bool	TraceMaster::Set(JSONNode const& _properties)
 	std::string	level;
 	if (GetMemberValue(_properties, "level", level))
 	{
-		if (level == "info")
+		if (level == "debug")
+		{
+			level_ = Trace::DEBUG;
+		}
+		else if (level == "info")
 		{
 			level_ = Trace::INFO;
 		}
