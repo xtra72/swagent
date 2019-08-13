@@ -59,6 +59,10 @@ public:
 			uint32_t	GetPower(void);
 			bool		SetPower(uint32_t _power);
 
+			bool		GetEncoder(void);
+			bool		SetEncoder(bool _enable);
+			bool		SetEncoder(uint32_t _count, uint32_t _mid);
+
 			int32_t		GetRSSI(void);
 
 			bool		GetLog(void);
@@ -84,17 +88,28 @@ public:
 			uint16_t	GetData(uint32_t _channel, uint32_t _index);
 			bool		AppendData(uint32_t _channel, uint16_t _value);
 			bool		ClearData(uint32_t _channel);
+			bool		ClearDataAll(void);
+
+			uint32_t	GetLastDataTime(void);
+			bool		SetLastDataTime(uint32_t _data_time);
+
 
 protected:
 	uint16_t			short_address_;
 	uint16_t			channel_count_;
 	uint32_t			frequency_;
 	uint32_t			power_;
+	bool				encoder_;
+	bool				reverse_;
 	uint64_t			contract_request_mid_;
 	bool				contracted_;
+	uint32_t			contract_time_;
+	int32_t				contract_time_diff_;
 	uint32_t			last_update_time_;
 	int32_t				rssi_;
 	bool				log_;
+	uint32_t			scan_start_time_;
+	uint32_t			last_data_time_;
 
 	virtual	void	Preprocess();
 
@@ -102,6 +117,7 @@ protected:
 	static	bool	SetChannelCount(Object* _object, JSONNode const& _value);
 	static	bool	SetFrequency(Object* _object, JSONNode const& _value);
 	static	bool	SetPower(Object* _object, JSONNode const& _value);
+	static	bool	SetEncoder(Object* _object, JSONNode const& _value);
 };
 #endif
 

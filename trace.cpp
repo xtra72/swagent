@@ -33,6 +33,32 @@ bool	Trace::SetClassName(std::string const& _class_name)
 
 bool	Trace::Set(JSONNode const& _value)
 {
+	std::string	level;
+	if (GetMemberValue(_value, "level", level))
+	{
+		if (strcasecmp(level.c_str(), "debug") == 0)
+		{
+			level_ = DEBUG;
+		}
+		else if (strcasecmp(level.c_str(), "info") == 0)
+		{
+			level_ = INFO;
+		}
+		else if (strcasecmp(level.c_str(), "warning") == 0)
+		{
+			level_ = WARNING;
+		}
+		else if (strcasecmp(level.c_str(), "error") == 0)
+		{
+			level_ = ERROR;
+		}
+		else if (strcasecmp(level.c_str(), "CRITICAL") == 0)
+		{
+			level_ = CRITICAL;
+		}
+	}
+
+	
 	GetMemberValue(_value, "debug", debug_);
 	GetMemberValue(_value, "dump", dump_);
 

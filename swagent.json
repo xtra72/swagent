@@ -20,10 +20,12 @@
 				"channel_count" : 8,
 				"frequency" : 920000000,
 				"power" : 18,
+				"encoder" : true,
 				"trace" : 
 				{
 					"enable":true,
-					"dump": false
+					"level" : "debug",
+					"dump": true
 				}
 			}
 		],
@@ -37,7 +39,8 @@
 	},
 	"trace" : {
 		"enable" : true,
-		"level" : "info",
+		"dump" : true,
+		"level" : "debug",
 		"output" : "console"
 	}
 }

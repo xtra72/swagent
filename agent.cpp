@@ -266,6 +266,7 @@ Agent::Agent()
 
 void	Agent::Preprocess()
 {
+	TRACE_INFO("Build Time - " << __DATE__ << " " << __TIME__);
 	for(auto node = node_list_.begin(); node != node_list_.end() ; node++)
 	{
 		//TRACE_INFO("Node Reset : " << (*node)->GetID());
@@ -337,7 +338,8 @@ bool	Agent::OnReceived(Message* _message)
 	char*	token = strtok(rxBuffer, ":");
 	if (!token)
 	{
-		TRACE_WARN("Invalid format.");
+		TRACE_WARN("Invalid format : " << rxBuffer);
+		TRACE_INFO_DUMP((uint8_t *)rxBuffer, message_packet_received->GetSize());
 		return	false;
 	}
 
@@ -355,6 +357,11 @@ bool	Agent::OnReceived(Message* _message)
 	{
 //		TRACE_INFO("+STAT");
 		return	OnStat(message_packet_received->GetSender(), token + strlen(token) + 1);
+	}
+	else if (strcasecmp(token, "+ENC") == 0)
+	{
+//		TRACE_INFO("+STAT");
+		return	OnEncoder(message_packet_received->GetSender(), token + strlen(token) + 1);
 	}
 	else if (strcasecmp(token, "+START") == 0)
 	{
@@ -465,6 +472,28 @@ bool	Agent::OnStat(std::string const &_node_id, char* _stat)
 	return	false;
 }
 
+bool	Agent::OnEncoder(std::string const &_node_id, char* _stat)
+{
+	if (_stat != NULL)
+	{
+		char*	token = strtok(_stat, ",");
+		if ((token != NULL) && (strcasecmp(token, "NOTI") == 0))
+		{
+			char*	value = strtok(NULL, ",");
+			if (value != NULL)
+			{
+				uint32_t	count;
+
+				if (StringToUint32(value, count))
+				{
+					PushEncoderDataToServer(count);		
+				}
+			}
+		}
+	}
+	return	false;
+}
+
 bool	Agent::OnStarted(std::string const &_node_id, char* _result)
 {
 	for(auto node = node_list_.begin() ; node != node_list_.end() ; node++)
@@ -547,6 +576,20 @@ bool	Agent::OnServerRequest(std::string const& _message)
 		else if ((ctl == "ready") || (ctl == "r"))
 		{
 			(*it)->Ready(mid);
+		}
+		else if (ctl == "z")
+		{
+			if ((*it)->GetEncoder())
+			{
+				uint32_t	count = 0;
+				if (!GetMemberValue(request, "val", count))
+				{
+					TRACE_WARN("The encoder value can not be found in the message.");
+					return	false;
+				}
+
+				(*it)->SetEncoder(count, mid);
+			}
 		}
 		else if (ctl == "detect_stop")
 		{
@@ -849,11 +892,7 @@ bool	Agent::ControlResponseToServer(void)
 	std::ostringstream	oss_msg_id;
 	oss_msg_id << current_time.GetMicroseconds();
 	payload.push_back(JSONNode("mid", oss_msg_id.str()));
-
-	std::ostringstream	oss_time_stamp;
-	oss_time_stamp << current_time.GetSeconds();
-	payload.push_back(JSONNode("ts", oss_time_stamp.str()));
-
+	payload.push_back(JSONNode("ts", current_time.GetSeconds()));
 	payload.push_back(JSONNode("res", "fail"));
 	payload.push_back(JSONNode("msg", "timeout"));
 
@@ -958,12 +997,7 @@ bool	Agent::PushMotionDetectedToServer(std::string const& _nodeId)
 	std::ostringstream	oss_msg_id;
 	oss_msg_id << current_time.GetMicroseconds();
 	payload.push_back(JSONNode("mid", oss_msg_id.str()));
-
-	std::ostringstream	oss_time_stamp;
-	oss_time_stamp << current_time.GetSeconds();
-	payload.push_back(JSONNode("ts", oss_time_stamp.str()));
-
-		
+	payload.push_back(JSONNode("ts", current_time.GetSeconds()));
 	payload.push_back(JSONNode("nid", _nodeId));
 
 	std::ostringstream	oss_topic;
@@ -1009,11 +1043,7 @@ bool	Agent::PushStatusToServer(float _battery)
 		std::ostringstream	oss_msg_id;
 		oss_msg_id << current_time.GetMicroseconds();
 		payload.push_back(JSONNode("mid", oss_msg_id.str()));
-
-		std::ostringstream	oss_time_stamp;
-		oss_time_stamp << current_time.GetSeconds();
-		payload.push_back(JSONNode("ts", oss_time_stamp.str()));
-
+		payload.push_back(JSONNode("ts", current_time.GetSeconds()));
 		payload.push_back(JSONNode("nid", (*it)->GetID()));
 		payload.push_back(JSONNode("vol", _battery));
 
@@ -1033,28 +1063,20 @@ bool	Agent::PushStatusToServer(float _battery)
 	return	true;
 }
 
-bool	Agent::PushEncoderDataToServer(void)
+bool	Agent::PushEncoderDataToServer(uint32_t _count)
 {
 	Date		current_time = Date::GetCurrent();
 	JSONNode	payload;
 
 	std::ostringstream	oss_msg_id;
 	oss_msg_id << current_time.GetMicroseconds();
-	payload.push_back(JSONNode("msgId", oss_msg_id.str()));
-
-	std::ostringstream	oss_time_stamp;
-	oss_time_stamp << current_time.GetSeconds();
-	payload.push_back(JSONNode("timeStamp", oss_time_stamp.str()));
-
+	payload.push_back(JSONNode("mid", oss_msg_id.str()));
+	payload.push_back(JSONNode("ts", current_time.GetSeconds()));
 	JSONNode	enData(JSON_ARRAY);
-	enData.set_name("enData");
+	enData.set_name("dat");
 
 	JSONNode	value(JSON_NUMBER);
-	value = 0;
-	enData.push_back(value);
-	value = 1;
-	enData.push_back(value);
-	value = 2;
+	value = _count;
 	enData.push_back(value);
 
 	payload.push_back(enData);
@@ -1113,10 +1135,7 @@ bool	Agent::OnMessageDataCallback(ActiveObject *_object, Message* _message)
 			std::ostringstream	oss_msg_id;
 			oss_msg_id << current_time.GetMicroseconds();
 			payload.push_back(JSONNode("mid", oss_msg_id.str()));
-
-			std::ostringstream	oss_time_stamp;
-			oss_time_stamp << current_time.GetSeconds();
-			payload.push_back(JSONNode("ts", oss_time_stamp.str()));
+			payload.push_back(JSONNode("ts", current_time.GetSeconds()));
 
 			JSONNode	data_array(JSON_ARRAY);
 			data_array.set_name("dat");
@@ -1193,6 +1212,7 @@ bool	Agent::OnMessageDataCallback2(ActiveObject *_object, Message* _message)
 	static	uint32_t	data_time = 0;
 	Date				current_time = Date::GetCurrent();
 	static	std::list<std::vector<uint16_t>>	mfl_list_;
+
 	if (!agent)
 	{
 		TRACE_ERROR2(NULL, "Object is not Agent");
@@ -1213,82 +1233,81 @@ bool	Agent::OnMessageDataCallback2(ActiveObject *_object, Message* _message)
 		return	false;
 	}
 
-	for(uint32_t loop = 0 ; loop < message_data->GetLength() ; loop += node->GetChannelCount())
+	if ((node->GetDataCount(0) != 0) && ((data_time != current_time.GetSeconds()) || (node->GetLastDataTime() != message_data->GetTime())))
 	{
+		JSONNode	payload;
 
-		if (data_time != current_time.GetSeconds())
+		std::ostringstream	oss_msg_id;
+		oss_msg_id << current_time.GetMicroseconds();
+		payload.push_back(JSONNode("mid", oss_msg_id.str()));
+		payload.push_back(JSONNode("ts", node->GetLastDataTime()));
+
+		JSONNode	data_array(JSON_ARRAY);
+		data_array.set_name("dat");
+
+		JSONNode	node_data;
+		node_data.push_back(JSONNode("nid", node->GetID()));
+		JSONNode	channel_data(JSON_ARRAY);
+		channel_data.set_name("ch");
+		if (agent->time_order_)
 		{
-			JSONNode	payload;
-
-			std::ostringstream	oss_msg_id;
-			oss_msg_id << current_time.GetMicroseconds();
-			payload.push_back(JSONNode("mid", oss_msg_id.str()));
-
-			std::ostringstream	oss_time_stamp;
-			oss_time_stamp << current_time.GetSeconds();
-			payload.push_back(JSONNode("ts", oss_time_stamp.str()));
-
-			JSONNode	data_array(JSON_ARRAY);
-			data_array.set_name("dat");
-
-			JSONNode	node_data;
-			node_data.push_back(JSONNode("nid", node->GetID()));
-			JSONNode	channel_data(JSON_ARRAY);
-			channel_data.set_name("ch");
-			if (agent->time_order_)
+			for(uint32_t i = 0 ; i < node->GetDataCount(0) ; i++)
 			{
-				for(uint32_t i = 0 ; i < node->GetDataCount(0) ; i++)
+				JSONNode	array(JSON_ARRAY);
+				for(uint32_t channel = 0 ; channel < node->GetChannelCount() ; channel++)
 				{
-					JSONNode	array(JSON_ARRAY);
-					for(uint32_t channel = 0 ; channel < node->GetChannelCount() ; channel++)
-					{
-						JSONNode	number(JSON_NUMBER);
+					JSONNode	number(JSON_NUMBER);
 
-						number = node->GetData(channel, i);
-						array.push_back(number);
-					}
-
-					channel_data.push_back(array);
+					number = node->GetData(channel, i);
+					array.push_back(number);
 				}
 
-				for(uint32_t i = 0 ; i < node->GetDataCount(0) ; i++)
-				{
-					node->ClearData(i);
-				}
+				channel_data.push_back(array);
 			}
-			else
+
+		}
+		else
+		{
+			for(uint32_t i = 0 ; i < node->GetChannelCount() ; i++)
 			{
-				for(uint32_t i = 0 ; i < node->GetChannelCount() ; i++)
+				JSONNode	array(JSON_ARRAY);
+				for(uint32_t j = 0 ; j < node->GetDataCount(i) ; j++)
 				{
-					JSONNode	array(JSON_ARRAY);
-					for(uint32_t j = 0 ; j < node->GetDataCount(i) ; j++)
-					{
-						JSONNode	number(JSON_NUMBER);
+					JSONNode	number(JSON_NUMBER);
 
-						number = node->GetData(i, j);
-						array.push_back(number);
-					}
-
-					channel_data.push_back(array);
-
-					node->ClearData(i);
+					number = node->GetData(i, j);
+					array.push_back(number);
 				}
+
+				channel_data.push_back(array);
 			}
-			node_data.push_back(channel_data);
-
-			data_array.push_back(node_data);
-
-			payload.push_back(data_array);
-
-			agent->PushDataToServer(payload.write());
-			data_time = current_time.GetSeconds();
 		}
 
-		for(uint32_t j  = 0 ; (loop + j) < message_data->GetLength() && (j < node->GetChannelCount()) ; j++)
-		{	
-			node->AppendData(j, message_data->GetValue(loop+j));
+		node->ClearDataAll();
+
+		node_data.push_back(channel_data);
+
+		data_array.push_back(node_data);
+
+		payload.push_back(data_array);
+
+		agent->PushDataToServer(payload.write());
+
+		data_time = current_time.GetSeconds();
+	}
+
+	if (node->GetChannelCount() != 0)
+	{
+		for(uint32_t loop = 0 ; loop < message_data->GetLength() / node->GetChannelCount() ; loop ++)
+		{
+			for(uint32_t j  = 0 ; j < node->GetChannelCount() ; j++)
+			{	
+				node->AppendData(j, message_data->GetValue((loop * node->GetChannelCount()) + j));
+			}
 		}
 	}
+
+	node->SetLastDataTime(message_data->GetTime());
 
 	//TRACE_INFO2(agent, "Data : " << message_data->GetTime() << ", " << message_data->GetLength());
 

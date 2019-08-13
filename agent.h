@@ -261,13 +261,14 @@ public:
 		bool	PushMotionDetectedToServer(std::string const& _nodeId);
 		bool	PushDataToServer(std::string const& _payload);
 		bool	PushStatusToServer(float _battery);
-		bool	PushEncoderDataToServer(void);
+		bool	PushEncoderDataToServer(uint32_t _count);
 		bool	PushResponseToServer(std::string const& _nodeId, bool _result, std::string const& _message);
 		bool	PushLogNotificationToServer(std::string const& _nodeId, std::string const& _message);
 
 		bool	OnPlusData(std::string const& _node_id, char* _data);
 		bool	OnPlusLog(std::string const& _node_id, char* _log);
 		bool	OnStat(std::string const &_node_id, char* _stat);
+		bool	OnEncoder(std::string const &_node_id, char* _stat);
 		bool	OnStarted(std::string const &_node_id, char* _result);
 		bool	OnServerRequest(std::string const& _message);
 		bool	OnReceived(Message* _message);

@@ -10,21 +10,23 @@ Node::Node()
 }
 
 Node::Node(JSONNode const& _config, Object* _parent)
-: CP2110("", _parent), frequency_(915000000), power_(18), contracted_(false), last_update_time_(0), rssi_(-200), log_(false)
+: CP2110("", _parent), frequency_(915000000), power_(18), encoder_(false), reverse_(false), contracted_(false), contract_time_(0), contract_time_diff_(0), last_update_time_(0), rssi_(-200), log_(false), last_data_time_(0)
 {
 	properties_map_["channel_count"] = SetChannelCount;
 	properties_map_["frequency"] = SetFrequency;
 	properties_map_["power"] = SetPower;
+	properties_map_["encoder"] = SetEncoder;
 
 	Set(_config);
 }
 
 Node::Node(std::string const& _id, Object* _parent)
-: CP2110(_id, _parent), frequency_(915000000), power_(18), contracted_(false), last_update_time_(0), rssi_(-200), log_(false)
+: CP2110(_id, _parent), frequency_(915000000), power_(18), encoder_(false), reverse_(false), contracted_(false), contract_time_(0), contract_time_diff_(0), last_update_time_(0), rssi_(-200), log_(false), last_data_time_(0)
 {
 	properties_map_["channel_count"] = SetChannelCount;
 	properties_map_["frequency"] = SetFrequency;
 	properties_map_["power"] = SetPower;
+	properties_map_["encoder"] = SetEncoder;
 }
 
 void	Node::Preprocess()
@@ -32,6 +34,7 @@ void	Node::Preprocess()
 	CP2110::Preprocess();
 
 
+	trace.SetDebug(true);
 	//Reset();
 	TRACE_INFO("Preprocess");
 	usleep(1000);
@@ -47,6 +50,15 @@ bool	Node::RFStart(void)
 
 	cmd << "AT+START:FREQ=" << frequency_;
 	cmd << ",POW=" << power_;
+	if (encoder_)
+	{
+		cmd << ",ENC=ON";
+	}
+	else
+	{
+		cmd << ",ENC=OFF";
+	}
+
 	
 	return	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
 }
@@ -97,6 +109,14 @@ bool		Node::SetConfig(void)
 
 	cmd << "AT+CFG:FREQ=" << frequency_;
 	cmd << ",POW=" << power_;
+	if (encoder_)
+	{
+		cmd << ",ENC=ON";
+	}
+	else
+	{
+		cmd << ",ENC=OFF";
+	}
 	
 	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
 
@@ -135,6 +155,38 @@ bool	Node::SetPower(uint32_t _power)
 	std::ostringstream	cmd;
 
 	cmd << "AT+CFG:POW=" << power_;
+	
+	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
+
+	return	true;
+}
+
+bool	Node::GetEncoder(void)
+{
+	return	encoder_;
+}
+
+bool	Node::SetEncoder(bool _enable)
+{
+	encoder_ = _enable;
+	TRACE_INFO("Set Encoder : " << ((encoder_)?"ON":"OFF"));
+
+	std::ostringstream	cmd;
+
+	cmd << "AT+CFG:ENC=" << ((encoder_)?"ON":"OFF");
+	
+	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
+
+	return	true;
+}
+
+bool	Node::SetEncoder(uint32_t _count, uint32_t _mid)
+{
+	TRACE_INFO("Set Encoder : " << _count);
+
+	std::ostringstream	cmd;
+
+	cmd << "AT+ENC:SET=" << _count;
 	
 	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
 
@@ -212,6 +264,16 @@ bool	Node::ClearData(uint32_t _channel)
 	return	true;
 }
 
+bool	Node::ClearDataAll(void)
+{
+	for(uint32_t i = 0 ; i < channel_data_.size() ; i++)
+	{
+		channel_data_[i].clear();
+	}
+
+	return	true;
+}
+
 bool	Node::Command(bool scan, bool trans)
 {
 	if (!contracted_)
@@ -261,6 +323,9 @@ bool	Node::Scan(bool start, uint32_t _mid)
 	if (start)
 	{
 		data[length++] = MSG_TYPE_SCAN_START;
+
+		Date	date;
+		scan_start_time_ = date.GetSeconds();
 	}
 	else
 	{
@@ -401,6 +466,10 @@ bool	Node::Contract(uint32_t _time, uint32_t _mid)
 	data[length++] = (_time >> 8) & 0xFF;
 	data[length++] = (_time      ) & 0xFF;
 
+	contract_time_ = _time;
+	Date	date;
+	contract_time_diff_ = (int32_t)contract_time_ - date.GetSeconds();
+
 	return	Downlink(data, length);
 }
 
@@ -454,8 +523,9 @@ bool	Node::OnRead(uint8_t* _data, uint32_t _length)
 		ActiveObject*	active_object = dynamic_cast<ActiveObject*>(parent_);
 		if (active_object)
 		{
-			TRACE_DEBUG("OnRead : Post Message - Dest = " << parent_->GetID() << ", Length = " << _length);
-			TRACE_DEBUG_DUMP(_data,_length);
+			//TRACE_INFO("OnRead : Post Message - Dest = " << parent_->GetID() << ", Length = " << _length);
+			//TRACE_INFO("OnRead : " << (char *)_data);
+			//TRACE_INFO_DUMP(_data,_length);
 			active_object->Post(new MessagePacketReceived(parent_->GetID(), id_, _data, _length));
 		}
 		else
@@ -510,6 +580,31 @@ bool	Node::SetPower(Object* _object, JSONNode const& _value)
 	return	true;
 }
 
+bool	Node::SetEncoder(Object* _object, JSONNode const& _value)
+{
+	Node*	node = dynamic_cast<Node*>(_object);
+	if (!node)
+	{
+		return	false;	
+	}
+
+	node->SetEncoder(_value.as_bool());
+
+	return	true;
+}
+
+uint32_t	Node::GetLastDataTime(void)
+{
+	return	last_data_time_;
+}
+
+bool		Node::SetLastDataTime(uint32_t _data_time)
+{
+	last_data_time_ = _data_time;
+
+	return	true;
+}
+
 bool	Node::OnWrite(uint8_t* _data, uint32_t _length)
 {
 
@@ -553,7 +648,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 						adc_values[i] = (data[12 + i*2] << 8) + (data[12 + i*2 + 1]);
 					}
 
-					Message* message = new Agent::MessageData(agent->GetID(), agent->GetID(), GetID(), time, adc_values, (length - 12) / 2);
+					Message* message = new Agent::MessageData(agent->GetID(), agent->GetID(), GetID(), contract_time_diff_ + scan_start_time_ + time / 1000, adc_values, (length - 12) / 2);
 					if (!agent->Post(message))
 					{
 						delete message;

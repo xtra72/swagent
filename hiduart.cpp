@@ -7,13 +7,13 @@
 #define ERROR_LEVEL_API_CODE            2
 
 HIDUART::HIDUART()
-: ActiveObject(), vid_(0), pid_(0), serial_(""), uart_(NULL), baudRate_(115200), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
+: ActiveObject(), vid_(0), pid_(0), serial_(""), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
 {
 	properties_map_["serial_id"] = SetSerialID;
 }
 
 HIDUART::HIDUART(std::string const& _id, uint16_t _vid, uint16_t _pid, std::string const& _serial, Object* _parent)
-: ActiveObject(_id, _parent), vid_(_vid), pid_(_pid), serial_(_serial), uart_(NULL), baudRate_(115200), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
+: ActiveObject(_id, _parent), vid_(_vid), pid_(_pid), serial_(_serial), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
 {
 	properties_map_["serial_id"] = SetSerialID;
 }
@@ -102,9 +102,12 @@ void	HIDUART::Process()
 		{
 			if ((buffer[i] == '\n') || (buffer[i] == '\r'))
 			{
-				rxBuffer[rxLength] = 0;
-				OnRead(rxBuffer, rxLength);
-				rxLength = 0;
+				if (rxLength)
+				{
+					rxBuffer[rxLength] = 0;
+					OnRead(rxBuffer, rxLength);
+					rxLength = 0;
+				}
 			}
 			else
 			{
