@@ -209,7 +209,7 @@ void	Agent::ServerRequestReceiver::OnMessage(std::string const& _message)
 }
 
 Agent::Agent(std::string const& _id)
-: ActiveObject(_id), client_(_id + ".client", this), status_report_interval_(3600), contract_request_interval_(10), plus_log_output_(false), check_mid_(false), time_order_(true)
+: ActiveObject(_id), client_(_id + ".client", this), status_report_interval_(3600), contract_request_interval_(10), plus_log_output_(false), check_mid_(false), time_order_(true), record_time_(0), encoder_base_time_(0), encoder_start_time_(0)
 {
 	properties_map_["node"] = SetNode;
 	properties_map_["server"] = SetServer;
@@ -237,7 +237,7 @@ Agent::Agent(std::string const& _id)
 }
 
 Agent::Agent()
-: ActiveObject("agent"), client_("client", this), status_report_interval_(3600), contract_request_interval_(10), plus_log_output_(false), check_mid_(false), time_order_(true)
+: ActiveObject("agent"), client_("client", this), status_report_interval_(3600), contract_request_interval_(10), plus_log_output_(false), check_mid_(false), time_order_(true), record_time_(0), encoder_base_time_(0), encoder_start_time_(0)
 {
 	properties_map_["node"] = SetNode;
 	properties_map_["server"] = SetServer;
@@ -479,15 +479,33 @@ bool	Agent::OnEncoder(std::string const &_node_id, char* _stat)
 		char*	token = strtok(_stat, ",");
 		if ((token != NULL) && (strcasecmp(token, "NOTI") == 0))
 		{
-			char*	value = strtok(NULL, ",");
-			if (value != NULL)
+			char*	value = strtok(NULL, " ");
+			if (value == NULL)
+			{
+				TRACE_DEBUG("Invalid time!");
+				return	false;
+			}
+
+			uint32_t	time;
+
+			if (!StringToUint32(value, time))
+			{
+				TRACE_DEBUG("Invalid time!");
+				return	false;
+			}
+
+
+			while((value = strtok(NULL, " ")) != NULL)
 			{
 				uint32_t	count;
 
-				if (StringToUint32(value, count))
+				if (!StringToUint32(value, count))
 				{
-					PushEncoderDataToServer(count);		
+					TRACE_DEBUG("Invalid count!");
+					return	false;
 				}
+				
+				PushEncoderDataToServer(time / 1000, count);		
 			}
 		}
 	}
@@ -869,12 +887,15 @@ bool	Agent::OnContractResponse(std::string const& _message)
 		return	false;
 	}
 
+
 	for(auto it = node_list_.begin() ; it != node_list_.end() ; it++)
 	{
 		if ((*it)->GetID() == nid)
 		{
 			TRACE_DEBUG("Node[" << nid << "] contracted!");
 			(*it)->Contract(ts, 0);
+
+			encoder_base_time_ = ts;
 			return	true;
 		}
 	}
@@ -1092,6 +1113,61 @@ bool	Agent::PushEncoderDataToServer(uint32_t _count)
 		delete pub;
 		TRACE_WARN("Publish failed!");
 		return	false;
+	}
+
+	return	true;
+}
+
+bool	Agent::PushEncoderDataToServer(uint32_t _time, uint32_t _count)
+{
+	Date		current_time = Date::GetCurrent();
+	JSONNode	payload;
+
+	if (encoder_base_time_)
+	{
+		if (!encoder_start_time_)
+		{
+			encoder_start_time_ = current_time.GetSeconds();
+			encoder_offset_time_ = (int32_t)encoder_base_time_ - _time;
+		}
+
+		if (record_time_ != _time)
+		{
+			std::ostringstream	oss_msg_id;
+			oss_msg_id << current_time.GetMicroseconds();
+			payload.push_back(JSONNode("mid", oss_msg_id.str()));
+			payload.push_back(JSONNode("ts",encoder_offset_time_ + _time));
+			JSONNode	enData(JSON_ARRAY);
+			enData.set_name("dat");
+
+			
+			for(auto it = encoder_count_.begin() ; it != encoder_count_.end() ; it++)
+			{
+				JSONNode	value(JSON_NUMBER);
+				value = *it;
+				enData.push_back(value);
+			}
+
+			encoder_count_.clear();
+
+			payload.push_back(enData);
+
+			std::ostringstream	oss_topic;
+
+			oss_topic << "cwr/mfl/encoder/push";
+
+			MQTTClient::Publisher*	pub = new MQTTClient::Publisher(oss_topic.str(), payload);
+
+			if (!client_.Publish(pub))
+			{
+				delete pub;
+				TRACE_WARN("Publish failed!");
+				return	false;
+			}
+		}
+
+		record_time_ = _time;
+		encoder_count_.push_back(_count);
 	}
 
 	return	true;

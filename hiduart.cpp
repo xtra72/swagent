@@ -7,15 +7,17 @@
 #define ERROR_LEVEL_API_CODE            2
 
 HIDUART::HIDUART()
-: ActiveObject(), vid_(0), pid_(0), serial_(""), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
+: ActiveObject(), vid_(0), pid_(0), port_(255),serial_(""), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
 {
 	properties_map_["serial_id"] = SetSerialID;
+	properties_map_["port"] = SetPort;
 }
 
 HIDUART::HIDUART(std::string const& _id, uint16_t _vid, uint16_t _pid, std::string const& _serial, Object* _parent)
-: ActiveObject(_id, _parent), vid_(_vid), pid_(_pid), serial_(_serial), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
+: ActiveObject(_id, _parent), vid_(_vid), pid_(_pid), port_(255), serial_(_serial), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
 {
 	properties_map_["serial_id"] = SetSerialID;
+	properties_map_["port"] = SetPort;
 }
 
 HIDUART::~HIDUART()
@@ -29,36 +31,39 @@ void	HIDUART::Preprocess()
 
 	loop_interval_ = 100;
 
-	TRACE_DEBUG("HIDUART serial : " << this->serial_);
-    if (this->serial_ != "")
-    {
-        bool		found = false;
-		uint32_t	count = 0;
-        
-		count = HIDUART::GetDeviceCount(this->pid_, this->vid_);
-        for (uint32_t i = 0; i < count; i++)
-        {
-            std::string serial;
-            
-            if (HIDUART::GetSerial(this->vid_, this->pid_, i, serial))
-            {
-                if (this->serial_ == serial)
-                {
-                    found = true;
-                    index = i;
-                }
-            }
-        }
-        
-        if (!found)
+	if (port_ == 255)
+	{
+		TRACE_DEBUG("HIDUART serial : " << this->serial_);
+		if (this->serial_ != "")
 		{
-			TRACE_DEBUG("HIDUART deivce not found!");
-            return;
-		}
-    }
+			bool		found = false;
+			uint32_t	count = 0;
 
-	TRACE_DEBUG("HIDUART Open : " << index << ", " << this->vid_ << ", " << this->pid_);
-	status = HidUart_Open(&this->uart_, index, this->vid_, this->pid_);
+			count = HIDUART::GetDeviceCount(this->pid_, this->vid_);
+			for (uint32_t i = 0; i < count; i++)
+			{
+				std::string serial;
+
+				if (HIDUART::GetSerial(this->vid_, this->pid_, i, serial))
+				{
+					if (this->serial_ == serial)
+					{
+						found = true;
+						port_ = i;
+					}
+				}
+			}
+
+			if (!found)
+			{
+				TRACE_DEBUG("HIDUART deivce not found!");
+				return;
+			}
+		}
+	}
+
+	TRACE_DEBUG("HIDUART Open : " << port_ << ", " << this->vid_ << ", " << this->pid_);
+	status = HidUart_Open(&this->uart_, port_, this->vid_, this->pid_);
     if (status != HID_UART_SUCCESS)
     {
 		TRACE_ERROR("Open failed!");		
@@ -80,6 +85,13 @@ void	HIDUART::Preprocess()
 bool	HIDUART::SetSerialID(std::string const& _serial)
 {
 	this->serial_ = _serial;
+
+	return	true;
+}
+
+bool	HIDUART::SetPort(uint32_t _port)
+{
+	this->port_ = _port;
 
 	return	true;
 }
@@ -221,4 +233,15 @@ bool	HIDUART::SetSerialID(Object* _object, JSONNode const& _value)
 	}
 
 	return	hiduart->SetSerialID(_value.as_string());
+}
+
+bool	HIDUART::SetPort(Object* _object, JSONNode const& _value)
+{
+	HIDUART*	hiduart = dynamic_cast<HIDUART*>(_object);
+	if (!hiduart)
+	{
+		return	false;	
+	}
+
+	return	hiduart->SetPort(_value.as_int());
 }

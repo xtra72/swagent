@@ -17,6 +17,7 @@ public:
 	~HIDUART();
 
 	virtual	bool	SetSerialID(std::string const& _serial);
+	virtual	bool	SetPort(uint32_t _port);
 
 	virtual	bool	OnRead(uint8_t* _data, uint32_t _length);
 	virtual	bool	OnWrite(uint8_t* _data, uint32_t _length);
@@ -28,6 +29,7 @@ public:
 protected:
 	uint16_t	vid_ ;
 	uint16_t	pid_ ;
+	uint32_t	port_;
     std::string	serial_;
 	HID_UART_DEVICE uart_;
 	HID_UART_STATUS	status_;
@@ -42,6 +44,7 @@ protected:
 	virtual	void	Postprocess();
 
 	static	bool	SetSerialID(Object* _object, JSONNode const& _value);
+	static	bool	SetPort(Object* _object, JSONNode const& _value);
 };
 
 #endif

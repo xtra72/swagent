@@ -4,7 +4,7 @@
 		"node" : [
 			{
 				"id" : "01234568",
-				"serial_id" : "0065DEF4",
+				"port" : 0,
 				"channel_count" : 8,
 				"frequency" : 922100000,
 				"power" : 18,
@@ -16,7 +16,7 @@
 			},
 			{
 				"id" : "01234567",
-				"serial_id" : "0065DEEF",
+				"port" : 1,
 				"channel_count" : 8,
 				"frequency" : 920000000,
 				"power" : 18,
@@ -24,7 +24,7 @@
 				"trace" : 
 				{
 					"enable":true,
-					"level" : "info",
+					"level" : "debug",
 					"dump": true
 				}
 			}
@@ -40,7 +40,7 @@
 	"trace" : {
 		"enable" : true,
 		"dump" : true,
-		"level" : "info",
+		"level" : "debug",
 		"output" : "console"
 	}
 }
