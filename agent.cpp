@@ -209,7 +209,7 @@ void	Agent::ServerRequestReceiver::OnMessage(std::string const& _message)
 }
 
 Agent::Agent(std::string const& _id)
-: ActiveObject(_id), client_(_id + ".client", this), status_report_interval_(3600), contract_request_interval_(10), plus_log_output_(false), check_mid_(false), time_order_(true), record_time_(0), encoder_base_time_(0), encoder_start_time_(0)
+: ActiveObject(_id), client_(_id + ".client", this), status_report_interval_(3600), contract_request_interval_(10), plus_log_output_(false), check_mid_(false), time_order_(true), record_time_(0), encoder_start_time_(0)
 {
 	properties_map_["node"] = SetNode;
 	properties_map_["server"] = SetServer;
@@ -237,7 +237,7 @@ Agent::Agent(std::string const& _id)
 }
 
 Agent::Agent()
-: ActiveObject("agent"), client_("client", this), status_report_interval_(3600), contract_request_interval_(10), plus_log_output_(false), check_mid_(false), time_order_(true), record_time_(0), encoder_base_time_(0), encoder_start_time_(0)
+: ActiveObject("agent"), client_("client", this), status_report_interval_(3600), contract_request_interval_(10), plus_log_output_(false), check_mid_(false), time_order_(true), record_time_(0), encoder_start_time_(0)
 {
 	properties_map_["node"] = SetNode;
 	properties_map_["server"] = SetServer;
@@ -266,7 +266,11 @@ Agent::Agent()
 
 void	Agent::Preprocess()
 {
+	Date	current_time = Date::GetCurrent();
+
 	TRACE_INFO("Build Time - " << __DATE__ << " " << __TIME__);
+
+	encoder_start_time_ = current_time.GetSeconds();
 	for(auto node = node_list_.begin(); node != node_list_.end() ; node++)
 	{
 		//TRACE_DEBUG("Node Reset : " << (*node)->GetID());
@@ -497,9 +501,9 @@ bool	Agent::OnEncoder(std::string const &_node_id, char* _stat)
 
 			while((value = strtok(NULL, " ")) != NULL)
 			{
-				uint32_t	count;
+				int32_t	count;
 
-				if (!StringToUint32(value, count))
+				if (!StringToInt32(value, count))
 				{
 					TRACE_DEBUG("Invalid count!");
 					return	false;
@@ -895,7 +899,6 @@ bool	Agent::OnContractResponse(std::string const& _message)
 			TRACE_DEBUG("Node[" << nid << "] contracted!");
 			(*it)->Contract(ts, 0);
 
-			encoder_base_time_ = ts;
 			return	true;
 		}
 	}
@@ -1054,37 +1057,42 @@ bool	Agent::StopStatusReport(void)
 	return	true;
 }
 
-bool	Agent::PushStatusToServer(float _battery)
+bool	Agent::PushStatusToServer(std::string const& _nid, float _battery)
 {
 	Date		current_time = Date::GetCurrent();
 	for(auto it = node_list_.begin() ; it != node_list_.end() ; it++)
 	{
-		JSONNode	payload;
-
-		std::ostringstream	oss_msg_id;
-		oss_msg_id << current_time.GetMicroseconds();
-		payload.push_back(JSONNode("mid", oss_msg_id.str()));
-		payload.push_back(JSONNode("ts", current_time.GetSeconds()));
-		payload.push_back(JSONNode("nid", (*it)->GetID()));
-		payload.push_back(JSONNode("vol", _battery));
-
-		std::ostringstream	oss_topic;
-
-		oss_topic << "cwr/mfl/health/push";
-
-		MQTTClient::Publisher*	pub = new MQTTClient::Publisher(oss_topic.str(), payload);
-
-		if (!client_.Publish(pub))
+		if ((*it)->GetID() == _nid)
 		{
-			delete pub;
-			TRACE_WARN("Publish failed!");
+			JSONNode	payload;
+
+			std::ostringstream	oss_msg_id;
+			oss_msg_id << current_time.GetMicroseconds();
+			payload.push_back(JSONNode("mid", oss_msg_id.str()));
+			payload.push_back(JSONNode("ts", current_time.GetSeconds()));
+			payload.push_back(JSONNode("nid", (*it)->GetID()));
+			payload.push_back(JSONNode("vol", _battery));
+
+			std::ostringstream	oss_topic;
+
+			oss_topic << "cwr/mfl/health/push";
+
+			MQTTClient::Publisher*	pub = new MQTTClient::Publisher(oss_topic.str(), payload);
+
+			if (!client_.Publish(pub))
+			{
+				delete pub;
+				TRACE_WARN("Publish failed!");
+				return	false;
+			}
+			break;
 		}
 	}
 
 	return	true;
 }
 
-bool	Agent::PushEncoderDataToServer(uint32_t _count)
+bool	Agent::PushEncoderDataToServer(int32_t _count)
 {
 	Date		current_time = Date::GetCurrent();
 	JSONNode	payload;
@@ -1118,57 +1126,48 @@ bool	Agent::PushEncoderDataToServer(uint32_t _count)
 	return	true;
 }
 
-bool	Agent::PushEncoderDataToServer(uint32_t _time, uint32_t _count)
+bool	Agent::PushEncoderDataToServer(uint32_t _time, int32_t _count)
 {
 	Date		current_time = Date::GetCurrent();
 	JSONNode	payload;
 
-	if (encoder_base_time_)
+	if ((record_time_ != _time) && (encoder_count_.size() != 0))
 	{
-		if (!encoder_start_time_)
-		{
-			encoder_start_time_ = current_time.GetSeconds();
-			encoder_offset_time_ = (int32_t)encoder_base_time_ - _time;
-		}
-
-		if (record_time_ != _time)
-		{
-			std::ostringstream	oss_msg_id;
-			oss_msg_id << current_time.GetMicroseconds();
-			payload.push_back(JSONNode("mid", oss_msg_id.str()));
-			payload.push_back(JSONNode("ts",encoder_offset_time_ + _time));
-			JSONNode	enData(JSON_ARRAY);
-			enData.set_name("dat");
+		std::ostringstream	oss_msg_id;
+		oss_msg_id << current_time.GetMicroseconds();
+		payload.push_back(JSONNode("mid", oss_msg_id.str()));
+		payload.push_back(JSONNode("ts",encoder_start_time_ + record_time_));
+		JSONNode	enData(JSON_ARRAY);
+		enData.set_name("dat");
 
 			
-			for(auto it = encoder_count_.begin() ; it != encoder_count_.end() ; it++)
-			{
-				JSONNode	value(JSON_NUMBER);
-				value = *it;
-				enData.push_back(value);
-			}
-
-			encoder_count_.clear();
-
-			payload.push_back(enData);
-
-			std::ostringstream	oss_topic;
-
-			oss_topic << "cwr/mfl/encoder/push";
-
-			MQTTClient::Publisher*	pub = new MQTTClient::Publisher(oss_topic.str(), payload);
-
-			if (!client_.Publish(pub))
-			{
-				delete pub;
-				TRACE_WARN("Publish failed!");
-				return	false;
-			}
+		for(auto it = encoder_count_.begin() ; it != encoder_count_.end() ; it++)
+		{
+			JSONNode	value(JSON_NUMBER);
+			value = *it;
+			enData.push_back(value);
 		}
 
-		record_time_ = _time;
-		encoder_count_.push_back(_count);
+		encoder_count_.clear();
+
+		payload.push_back(enData);
+
+		std::ostringstream	oss_topic;
+
+		oss_topic << "cwr/mfl/encoder/push";
+
+		MQTTClient::Publisher*	pub = new MQTTClient::Publisher(oss_topic.str(), payload);
+
+		if (!client_.Publish(pub))
+		{
+			delete pub;
+			TRACE_WARN("Publish failed!");
+			return	false;
+		}
 	}
+
+	record_time_ = _time;
+	encoder_count_.push_back(_count);
 
 	return	true;
 }
@@ -1634,7 +1633,7 @@ bool	Agent::OnMessageKeepAlive(ActiveObject *_object, Message* _message)
 	}
 
 	TRACE_ERROR2(agent, "keep Alive received : " << message->GetBattery());
-	agent->PushStatusToServer(message->GetBattery());
+	agent->PushStatusToServer(message->GetNID(), message->GetBattery());
 
 	return	true;
 
@@ -1655,7 +1654,7 @@ void	Agent::OnStatusReport(void* _params)
 	Agent*	agent = (Agent*)_params;
 	if (agent != NULL)
 	{
-		agent->PushStatusToServer(3.4);
+		//agent->PushStatusToServer(3.4);
 	}
 }
 

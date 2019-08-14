@@ -260,9 +260,9 @@ public:
 		bool	ContractRequestToServer(char* _node_id, uint8_t _channel_count);
 		bool	PushMotionDetectedToServer(std::string const& _nodeId);
 		bool	PushDataToServer(std::string const& _payload);
-		bool	PushStatusToServer(float _battery);
-		bool	PushEncoderDataToServer(uint32_t _count);
-		bool	PushEncoderDataToServer(uint32_t _time, uint32_t _count);
+		bool	PushStatusToServer(std::string const& _nid, float _battery);
+		bool	PushEncoderDataToServer(int32_t _count);
+		bool	PushEncoderDataToServer(uint32_t _time, int32_t _count);
 		bool	PushResponseToServer(std::string const& _nodeId, bool _result, std::string const& _message);
 		bool	PushLogNotificationToServer(std::string const& _nodeId, std::string const& _message);
 
@@ -287,10 +287,8 @@ protected:
 	bool				check_mid_;
 	bool				time_order_;
 	uint32_t			record_time_;
-	uint32_t			encoder_base_time_;
 	uint32_t			encoder_start_time_;
-	int32_t				encoder_offset_time_;
-	std::list<uint32_t>	encoder_count_;
+	std::list<int32_t>	encoder_count_;
 
 	uint32_t	data_time;
 	std::list<std::vector<uint16_t>>		mfl_list_;

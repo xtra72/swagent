@@ -383,6 +383,59 @@ bool	StringToUint32(char* _string, uint32_t& _value)
 	return	true;
 }
 
+bool	StringToInt32(char* _string, int32_t& _value)
+{
+	if (_string == NULL)
+	{
+		return	false;
+	}
+
+	while(*_string != 0)
+	{
+		if (!isspace(*_string))
+		{
+			break;
+		}
+		_string++;
+	}
+
+	char*	ptr = _string;
+	while(*ptr != 0)
+	{
+		if (isspace(*_string))
+		{
+			*ptr = 0;
+			break;
+		}
+		ptr++;
+	}
+
+
+	if (11 < strlen(_string))
+	{
+		return	false;
+	}
+
+	uint32_t	i = 0;
+
+	if ((_string[i] != '-') && (_string[i] != '+') && ((_string[i] < '0') || ('9' < _string[i])))
+	{
+		return	false;
+	}
+
+	for(uint32_t i = 1 ; i < strlen(_string) ; i++)
+	{
+		if ((_string[i] < '0') || ('9' < _string[i]))
+		{
+			return	false;
+		}
+	}
+
+	_value = strtol(_string, 0, 10);
+
+	return	true;
+}
+
 std::vector<std::string> split(const std::string& s, char delimiter)
 {
 	std::vector<std::string> tokens;

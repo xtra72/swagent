@@ -26,6 +26,7 @@ bool	StringToUint8(std::string const& _string ,uint8_t* _array, uint32_t _max_le
 
 bool	StringToUint32(std::string const& _string, uint32_t& value);
 bool	StringToUint32(char* _string, uint32_t& value);
+bool	StringToInt32(char* _string, int32_t& value);
 
 std::vector<std::string> split(const std::string& s, char delimiter);
 
