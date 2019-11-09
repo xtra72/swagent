@@ -174,6 +174,33 @@ Agent::MessageTransAlreadyStopped::~MessageTransAlreadyStopped()
 {
 }
 
+Agent::MessageReadyStarted::MessageReadyStarted(std::string const& _receiver, std::string const& _sender, std::string const& _nid)
+: Message(MESSAGE_TYPE_READY_STARTED, _receiver,_sender), nid_(_nid)
+{
+}
+
+Agent::MessageReadyStarted::~MessageReadyStarted()
+{
+}
+
+Agent::MessageReadyAlreadyStarted::MessageReadyAlreadyStarted(std::string const& _receiver, std::string const& _sender, std::string const& _nid)
+: Message(MESSAGE_TYPE_READY_ALREADY_STARTED, _receiver,_sender), nid_(_nid)
+{
+}
+
+Agent::MessageReadyAlreadyStarted::~MessageReadyAlreadyStarted()
+{
+}
+
+Agent::MessageReadyStopped::MessageReadyStopped(std::string const& _receiver, std::string const& _sender, std::string const& _nid)
+: Message(MESSAGE_TYPE_READY_STOPPED, _receiver,_sender), nid_(_nid)
+{
+}
+
+Agent::MessageReadyStopped::~MessageReadyStopped()
+{
+}
+
 Agent::ContractResponseReceiver::ContractResponseReceiver(Agent* _parent, std::string const& _topic) 
 : MQTTClient::Subscriber(_topic) 
 {
@@ -233,6 +260,9 @@ Agent::Agent(std::string const& _id)
 	message_handler_map_[MESSAGE_TYPE_TRANS_ALREADY_STARTED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_TRANS_STOPPED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_TRANS_ALREADY_STOPPED]	= OnMessageConfirmCallback;
+	message_handler_map_[MESSAGE_TYPE_READY_STARTED]	= OnMessageConfirmCallback;
+	message_handler_map_[MESSAGE_TYPE_READY_ALREADY_STARTED]	= OnMessageConfirmCallback;
+	message_handler_map_[MESSAGE_TYPE_READY_STOPPED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_KEEP_ALIVE]	= OnMessageKeepAlive;
 }
 
@@ -261,6 +291,9 @@ Agent::Agent()
 	message_handler_map_[MESSAGE_TYPE_TRANS_ALREADY_STARTED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_TRANS_STOPPED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_TRANS_ALREADY_STOPPED]	= OnMessageConfirmCallback;
+	message_handler_map_[MESSAGE_TYPE_READY_STARTED]	= OnMessageConfirmCallback;
+	message_handler_map_[MESSAGE_TYPE_READY_ALREADY_STARTED]	= OnMessageConfirmCallback;
+	message_handler_map_[MESSAGE_TYPE_READY_STOPPED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_KEEP_ALIVE]	= OnMessageKeepAlive;
 }
 
@@ -374,6 +407,14 @@ bool	Agent::OnReceived(Message* _message)
 	else if (strcasecmp(token, "+STOP") == 0)
 	{
 	}
+	else if (strcasecmp(token, "+START") == 0)
+	{
+		return	OnStarted(message_packet_received->GetSender(), token + strlen(token) + 1);
+	}
+	else if (strcasecmp(token, "+CFG") == 0)
+	{
+		return	OnConfig(message_packet_received->GetSender(), token + strlen(token) + 1);
+	}
 	else
 	{
 		TRACE_WARN("Not support AT command - " << token);
@@ -458,6 +499,12 @@ bool	Agent::OnPlusLog(std::string const &_node_id, char* _log)
 		{
 			TRACE_DEBUG("+LOG : " << _log);
 		}
+
+		Node*	node = GetNode(_node_id);
+		if (node)
+		{
+			node->Touch();
+		}
 	}
 
 	return	true;
@@ -480,9 +527,12 @@ bool	Agent::OnEncoder(std::string const &_node_id, char* _stat)
 {
 	if (_stat != NULL)
 	{
+
 		char*	token = strtok(_stat, ",");
 		if ((token != NULL) && (strcasecmp(token, "NOTI") == 0))
 		{
+			int32_t	count = 0;
+
 			char*	value = strtok(NULL, " ");
 			if (value == NULL)
 			{
@@ -501,8 +551,6 @@ bool	Agent::OnEncoder(std::string const &_node_id, char* _stat)
 
 			while((value = strtok(NULL, " ")) != NULL)
 			{
-				int32_t	count;
-
 				if (!StringToInt32(value, count))
 				{
 					TRACE_DEBUG("Invalid count!");
@@ -510,6 +558,12 @@ bool	Agent::OnEncoder(std::string const &_node_id, char* _stat)
 				}
 				
 				PushEncoderDataToServer(time / 1000, count);		
+			}
+
+			Node*	node = GetNode(_node_id);
+			if (node)
+			{
+				node->OnEncoder(count);
 			}
 		}
 	}
@@ -523,6 +577,19 @@ bool	Agent::OnStarted(std::string const &_node_id, char* _result)
 		if ((*node)->GetID() == _node_id)
 		{
 			return	(*node)->OnStarted(_result);
+		}
+	}
+
+	return	false;
+}
+
+bool	Agent::OnConfig(std::string const &_node_id, char* _result)
+{
+	for(auto node = node_list_.begin() ; node != node_list_.end() ; node++)
+	{
+		if ((*node)->GetID() == _node_id)
+		{
+			return	(*node)->OnConfig(_result);
 		}
 	}
 
@@ -692,7 +759,7 @@ bool	Agent::SetLog(Object* _object, JSONNode const& _value)
 
 	for(auto item = _value.begin() ; item != _value.end() ; item++)
 	{
-		if (item->name() == "plus_log_output_")
+		if (item->name() == "plus_log")
 		{
 			agent->plus_log_output_ = item->as_bool();
 		}
@@ -1559,6 +1626,32 @@ bool	Agent::OnMessageConfirmCallback(ActiveObject *_object, Message* _message)
 			MessageTransAlreadyStopped*	message = dynamic_cast<MessageTransAlreadyStopped*>(_message);
 			nid = message->GetNID();
 			log = "Data transfer already stopped";	
+		}
+		break;
+
+	case	MESSAGE_TYPE_READY_STARTED:
+		{
+			MessageReadyStarted*	message = dynamic_cast<MessageReadyStarted*>(_message);
+			nid = message->GetNID();
+			log = "Ready started";	
+
+			agent->PushResponseToServer(nid, true, log);
+		}
+		break;
+
+	case	MESSAGE_TYPE_READY_ALREADY_STARTED:
+		{
+			MessageReadyAlreadyStarted*	message = dynamic_cast<MessageReadyAlreadyStarted*>(_message);
+			nid = message->GetNID();
+			log = "Ready already started";	
+		}
+		break;
+
+	case	MESSAGE_TYPE_READY_STOPPED:
+		{
+			MessageReadyStopped*	message = dynamic_cast<MessageReadyStopped*>(_message);
+			nid = message->GetNID();
+			log = "Ready stopped";	
 		}
 		break;
 

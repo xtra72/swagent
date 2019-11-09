@@ -4,6 +4,7 @@
 #include "utils.h"
 
 
+
 bool	GetMemberValue(JSONNode const& _object, std::string const& _title, std::string& _value)
 {
 	JSONNode::const_iterator it = _object.find(_title);
@@ -447,5 +448,4 @@ std::vector<std::string> split(const std::string& s, char delimiter)
 	}
 	return tokens;
 }
-
 

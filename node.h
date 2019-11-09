@@ -2,6 +2,7 @@
 #define	NODE_H_
 
 #include "cp211x.h"
+#include "gpio.h"
 
 class	Node : public CP2110
 {
@@ -36,6 +37,10 @@ public:
 		MSG_TYPE_STOP= 0x1A,
 		MSG_TYPE_READY= 0x1B,
 		MSG_TYPE_KEEP_ALIVE = 0x1C,
+
+		MSG_TYPE_READY_STARTED = 0x1D,
+		MSG_TYPE_READY_ALREADY_STARTED = 0x1E,
+		MSG_TYPE_READY_STOPPED = 0x1F
 	};
 
 	Node();
@@ -44,6 +49,8 @@ public:
 
 			bool		RFStart(void);
 			bool		Reset(void);
+			bool		ColdReset(void);
+			bool		Touch(void);
 
 			bool		IsContracted(void);
 			bool		SetContract(bool _contract);
@@ -63,6 +70,11 @@ public:
 			bool		SetEncoder(bool _enable);
 			bool		SetEncoder(uint32_t _count, uint32_t _mid);
 
+			bool		SetResetControl(uint32_t _index);
+
+			bool		SetLiveCheck(bool _live_check);
+			bool		GetLiveCheck();
+
 			int32_t		GetRSSI(void);
 
 			bool		GetLog(void);
@@ -81,6 +93,8 @@ public:
 			bool		OnData(uint8_t* data, uint32_t length);
 			bool		OnStat(char* _stat);
 			bool		OnStarted(char* _stat);
+			bool		OnConfig(char* _stat);
+			bool		OnEncoder(int32_t _count);
 	virtual	bool		OnRead(uint8_t* _data, uint32_t _length);
 	virtual	bool		OnWrite(uint8_t* _data, uint32_t _length);
 
@@ -99,6 +113,7 @@ protected:
 	uint16_t			channel_count_;
 	uint32_t			frequency_;
 	uint32_t			power_;
+	bool				touch_;
 	bool				encoder_;
 	bool				reverse_;
 	uint64_t			contract_request_mid_;
@@ -110,14 +125,22 @@ protected:
 	bool				log_;
 	uint32_t			scan_start_time_;
 	uint32_t			last_data_time_;
+	uint32_t			live_timeout_;
+	int32_t				encoder_count_;
+
+	std::vector<std::vector<uint16_t>>  channel_data_;
+	GPIOOut				*reset_control;
+	bool				live_check_;
 
 	virtual	void	Preprocess();
+	virtual void	Process();
 
-	std::vector<std::vector<uint16_t>>	channel_data_;
 	static	bool	SetChannelCount(Object* _object, JSONNode const& _value);
 	static	bool	SetFrequency(Object* _object, JSONNode const& _value);
 	static	bool	SetPower(Object* _object, JSONNode const& _value);
 	static	bool	SetEncoder(Object* _object, JSONNode const& _value);
+	static	bool	SetResetControl(Object* _object, JSONNode const& _value);
+	static	bool	SetLiveCheck(Object* _object, JSONNode const& _value);
 };
 #endif
 

@@ -10,23 +10,43 @@ Node::Node()
 }
 
 Node::Node(JSONNode const& _config, Object* _parent)
-: CP2110("", _parent), frequency_(915000000), power_(18), encoder_(false), reverse_(false), contracted_(false), contract_time_(0), contract_time_diff_(0), last_update_time_(0), rssi_(-200), log_(false), last_data_time_(0)
+: CP2110("", _parent), frequency_(915000000), power_(14), touch_(false), encoder_(false), reverse_(false), contracted_(false), contract_time_(0), contract_time_diff_(0), last_update_time_(0), rssi_(-200), log_(false), last_data_time_(0), live_timeout_(10), encoder_count_(0), channel_data_(8), reset_control(NULL), live_check_(false)
 {
 	properties_map_["channel_count"] = SetChannelCount;
 	properties_map_["frequency"] = SetFrequency;
 	properties_map_["power"] = SetPower;
 	properties_map_["encoder"] = SetEncoder;
+	properties_map_["live_check"] = SetLiveCheck;
+	properties_map_["reset_control"] = SetResetControl;
 
 	Set(_config);
 }
 
 Node::Node(std::string const& _id, Object* _parent)
-: CP2110(_id, _parent), frequency_(915000000), power_(18), encoder_(false), reverse_(false), contracted_(false), contract_time_(0), contract_time_diff_(0), last_update_time_(0), rssi_(-200), log_(false), last_data_time_(0)
+: CP2110(_id, _parent), frequency_(915000000), power_(14), touch_(false), encoder_(false), reverse_(false), contracted_(false), contract_time_(0), contract_time_diff_(0), last_update_time_(0), rssi_(-200), log_(false), last_data_time_(0), live_timeout_(10), encoder_count_(0), channel_data_(8), reset_control(NULL), live_check_(false)
 {
 	properties_map_["channel_count"] = SetChannelCount;
 	properties_map_["frequency"] = SetFrequency;
 	properties_map_["power"] = SetPower;
 	properties_map_["encoder"] = SetEncoder;
+	properties_map_["live_check"] = SetLiveCheck;
+	properties_map_["reset_control"] = SetResetControl;
+}
+
+
+bool	Node::Touch(void)
+{
+	touch_ = true;
+
+	return	true;
+}
+
+bool	Node::OnEncoder(int32_t _count)
+{
+	encoder_count_ = _count;
+	touch_ = true;
+
+	return	true;
 }
 
 void	Node::Preprocess()
@@ -34,12 +54,52 @@ void	Node::Preprocess()
 	CP2110::Preprocess();
 
 
+	if (!reset_control)
+	{
+		if (port_ == 0)
+		{
+			SetResetControl(22);
+		}
+		else if (port_ == 1)
+		{
+			SetResetControl(61);
+		}
+	}
+
 	trace.SetDebug(true);
 	//Reset();
 	TRACE_DEBUG("Preprocess");
 	usleep(1000);
 
 	RFStart();
+}
+
+void	Node::Process()
+{
+	CP2110::Process();
+	if (live_check_)
+	{
+		if (touch_)
+		{
+			//TRACE_DEBUG("Touched");
+			touch_ = false;
+			live_timeout_ = 10;
+		}
+		else
+		{
+			if (--live_timeout_  == 0)
+			{
+				TRACE_DEBUG("There is no reaction on the node.");
+				ColdReset();
+				usleep(1000000);
+				RFStart();
+				usleep(1000000);
+				SetEncoder(encoder_count_, 0);
+				
+			}
+			
+		}
+	}
 }
 
 bool	Node::RFStart(void)
@@ -72,6 +132,24 @@ bool	Node::Reset(void)
 	cmd << "AT+RESET:0";
 	
 	return	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
+}
+
+bool	Node::ColdReset(void)
+{
+	TRACE_DEBUG("ColdReset");
+
+	if (!reset_control)
+	{
+		TRACE_WARN("Undefined reset control");
+
+		return	false;
+	}
+
+	reset_control->Value(false);
+	usleep(100000);
+	reset_control->Value(true);
+	
+	return	true;
 }
 
 bool	Node::GetLog(void)
@@ -191,6 +269,37 @@ bool	Node::SetEncoder(uint32_t _count, uint32_t _mid)
 	OnWrite((uint8_t *)cmd.str().c_str(), cmd.str().length());
 
 	return	true;
+}
+
+bool	Node::SetResetControl(uint32_t _index)
+{
+	TRACE_DEBUG("Set Reset GPIO : " << _index);
+
+	std::ostringstream	cmd;
+
+	if (reset_control != NULL)
+	{
+		delete reset_control;
+		reset_control = NULL;
+	}
+
+	reset_control = new GPIOOut(_index);
+
+	return	true;
+}
+
+bool	Node::SetLiveCheck(bool _live_check)
+{
+	TRACE_DEBUG("Set Live Check : " << _live_check);
+
+	live_check_ = _live_check;
+
+	return	true;
+}
+
+bool	Node::GetLiveCheck()
+{
+	return	live_check_;
 }
 
 uint32_t	Node::GetChannelCount(void)
@@ -593,6 +702,32 @@ bool	Node::SetEncoder(Object* _object, JSONNode const& _value)
 	return	true;
 }
 
+bool	Node::SetResetControl(Object* _object, JSONNode const& _value)
+{
+	Node*	node = dynamic_cast<Node*>(_object);
+	if (!node)
+	{
+		return	false;	
+	}
+
+	node->SetResetControl(_value.as_int());
+
+	return	true;
+}
+
+bool	Node::SetLiveCheck(Object* _object, JSONNode const& _value)
+{
+	Node*	node = dynamic_cast<Node*>(_object);
+	if (!node)
+	{
+		return	false;	
+	}
+
+	node->SetLiveCheck(_value.as_bool());
+
+	return	true;
+}
+
 uint32_t	Node::GetLastDataTime(void)
 {
 	return	last_data_time_;
@@ -629,7 +764,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				Agent*	agent = dynamic_cast<Agent*>(parent_);
 				if (agent != NULL)
 				{
-					if ((length - 12) % 16 != 0)
+					if ((length - 12) % (channel_data_.size() * 2) != 0)
 					{
 						std::ostringstream	oss;
 						oss << "Invalid Data : " << data;
@@ -890,6 +1025,54 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 			}
 			break;
 
+		case	MSG_TYPE_READY_STARTED:
+			{
+				Agent*	agent = dynamic_cast<Agent*>(parent_);
+				if (agent != NULL)
+				{
+					Message*	message = new Agent::MessageReadyStarted(agent->GetID(), agent->GetID(), GetID());
+				
+					TRACE_DEBUG("Ready Started : " << GetID());
+					if (!agent->Post(message))
+					{
+						delete message;
+					}
+				}
+			}
+			break;
+
+		case	MSG_TYPE_READY_ALREADY_STARTED:
+			{
+				Agent*	agent = dynamic_cast<Agent*>(parent_);
+				if (agent != NULL)
+				{
+					Message*	message = new Agent::MessageReadyAlreadyStarted(agent->GetID(), agent->GetID(), GetID());
+				
+					TRACE_DEBUG("Ready already Started : " << GetID());
+					if (!agent->Post(message))
+					{
+						delete message;
+					}
+				}
+			}
+			break;
+
+		case	MSG_TYPE_READY_STOPPED:
+			{
+				Agent*	agent = dynamic_cast<Agent*>(parent_);
+				if (agent != NULL)
+				{
+					Message*	message = new Agent::MessageReadyStopped(agent->GetID(), agent->GetID(), GetID());
+				
+					TRACE_DEBUG("Ready Stopped : " << GetID());
+					if (!agent->Post(message))
+					{
+						delete message;
+					}
+				}
+			}
+			break;
+
 		case	MSG_TYPE_KEEP_ALIVE:
 			{
 				Agent*	agent = dynamic_cast<Agent*>(parent_);
@@ -959,7 +1142,7 @@ bool	Node::OnStat(char* _stat)
 
 bool	Node::OnStarted(char* _result)
 {
-	if (strcasecmp(_result, "OK") == 0)
+	if (strncasecmp(_result, "OK",2) == 0)
 	{
 		TRACE_DEBUG("Successfully Started!");
 	}
@@ -970,3 +1153,19 @@ bool	Node::OnStarted(char* _result)
 
 	return	true;
 }
+
+bool	Node::OnConfig(char* _result)
+{
+	if (strncasecmp(_result, "OK",2) == 0)
+	{
+		TRACE_DEBUG("Config success!");
+	}
+	else
+	{
+		TRACE_DEBUG("Config failed! : " << ((_result != NULL)?_result:""));
+	}
+
+	return	true;
+}
+
+

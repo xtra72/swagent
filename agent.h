@@ -24,6 +24,9 @@
 #define		MESSAGE_TYPE_TRANS_STOPPED				114
 #define		MESSAGE_TYPE_TRANS_ALREADY_STOPPED		115
 #define		MESSAGE_TYPE_KEEP_ALIVE					116
+#define		MESSAGE_TYPE_READY_STARTED			117
+#define		MESSAGE_TYPE_READY_ALREADY_STARTED	118
+#define		MESSAGE_TYPE_READY_STOPPED				119
 
 class	Agent : public ActiveObject
 {
@@ -216,6 +219,42 @@ public:
 			std::string	nid_;
 	};
 
+	class	MessageReadyStarted : public Message	
+	{
+		public:
+			MessageReadyStarted(std::string const& _receiver, std::string const& _sender, std::string const& _nid);
+			~MessageReadyStarted();
+
+			const std::string&	GetNID(void)	{	return	nid_;	}
+
+		protected:
+			std::string	nid_;
+	};
+
+	class	MessageReadyAlreadyStarted : public Message	
+	{
+		public:
+			MessageReadyAlreadyStarted(std::string const& _receiver, std::string const& _sender, std::string const& _nid);
+			~MessageReadyAlreadyStarted();
+
+			const std::string&	GetNID(void)	{	return	nid_;	}
+
+		protected:
+			std::string	nid_;
+	};
+
+	class	MessageReadyStopped : public Message	
+	{
+		public:
+			MessageReadyStopped(std::string const& _receiver, std::string const& _sender, std::string const& _nid);
+			~MessageReadyStopped();
+
+			const std::string&	GetNID(void)	{	return	nid_;	}
+
+		protected:
+			std::string	nid_;
+	};
+
 	class	MessageKeepAlive: public Message	
 	{
 		public:
@@ -271,6 +310,7 @@ public:
 		bool	OnStat(std::string const &_node_id, char* _stat);
 		bool	OnEncoder(std::string const &_node_id, char* _stat);
 		bool	OnStarted(std::string const &_node_id, char* _result);
+		bool	OnConfig(std::string const &_node_id, char* _result);
 		bool	OnServerRequest(std::string const& _message);
 		bool	OnReceived(Message* _message);
 		bool	OnContractResponse(std::string const& _message);
