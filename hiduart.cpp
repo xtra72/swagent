@@ -7,17 +7,19 @@
 #define ERROR_LEVEL_API_CODE            2
 
 HIDUART::HIDUART()
-: ActiveObject(), vid_(0), pid_(0), port_(255),serial_(""), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
+: ActiveObject(), vid_(0), pid_(0), port_(255),serial_(""), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0), serialTimeout_(20)
 {
 	properties_map_["serial_id"] = SetSerialID;
 	properties_map_["port"] = SetPort;
+	properties_map_["serial_timeout"] = SetSerialTimeout;
 }
 
 HIDUART::HIDUART(std::string const& _id, uint16_t _vid, uint16_t _pid, std::string const& _serial, Object* _parent)
-: ActiveObject(_id, _parent), vid_(_vid), pid_(_pid), port_(255), serial_(_serial), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0)
+: ActiveObject(_id, _parent), vid_(_vid), pid_(_pid), port_(255), serial_(_serial), uart_(NULL), baudRate_(921600), dataBits_(3), parity_(HID_UART_NO_PARITY), stopBits_(0), flowControl_(0), serialTimeout_(20)
 {
 	properties_map_["serial_id"] = SetSerialID;
 	properties_map_["port"] = SetPort;
+	properties_map_["serial_timeout"] = SetSerialTimeout;
 }
 
 HIDUART::~HIDUART()
@@ -77,7 +79,7 @@ void	HIDUART::Preprocess()
 			TRACE_ERROR("Failed setting UART config: " << DecodeHidUartStatus(status).c_str());
 		}
     
-		status = HidUart_SetTimeouts(this->uart_, 10, 10);
+		status = HidUart_SetTimeouts(this->uart_, this->serialTimeout_, this->serialTimeout_);
 	}
 
 }
@@ -96,16 +98,29 @@ bool	HIDUART::SetPort(uint32_t _port)
 	return	true;
 }
 
+bool	HIDUART::SetSerialTimeout(uint32_t _timeout)
+{
+	this->serialTimeout_ = _timeout;
+
+	return	true;
+}
+
 void	HIDUART::Process()
 {
 	static	uint8_t		rxBuffer[HID_UART_MAX_READ_SIZE + 1];
-	static	uint32_t	rxLength = 0;
 	static	uint8_t		buffer[HID_UART_MAX_READ_SIZE + 1];
-	static	uint32_t	length;
-	Date	startDate, endDate;
-	length = 0;
-	HID_UART_STATUS status = HidUart_Read(uart_, buffer, HID_UART_MAX_READ_SIZE , &length);
+	static	uint32_t	remainLength = 0;
+	uint32_t			rxLength = 0;
+	uint32_t			length = 0;
 
+	if (remainLength != 0)
+	{
+		TRACE_DEBUG("HidUart_Read : " << remainLength);
+	}
+
+	HID_UART_STATUS status = HidUart_Read(uart_, &buffer[remainLength], HID_UART_MAX_READ_SIZE - remainLength , &length);
+
+	length += remainLength;
 	// Read at least 1 byte
 	if ((status == HID_UART_SUCCESS || status == HID_UART_READ_TIMED_OUT) && (length > 0))
 	{
@@ -119,6 +134,7 @@ void	HIDUART::Process()
 					rxBuffer[rxLength] = 0;
 					OnRead(rxBuffer, rxLength);
 					rxLength = 0;
+					remainLength = 0;
 				}
 			}
 			else
@@ -128,13 +144,19 @@ void	HIDUART::Process()
 					rxBuffer[rxLength++] = buffer[i];
 					if (rxLength == HID_UART_MAX_READ_SIZE)
 					{
-						rxBuffer[rxLength] = 0;
-						OnRead(rxBuffer, rxLength);
-						rxLength = 0;
+						//rxBuffer[rxLength] = 0;
+						//OnRead(rxBuffer, rxLength);
+						//rxLength = 0;
 					}
 				}
 			}
 		}
+	}
+
+	if (rxLength != 0)
+	{
+		memcpy(buffer, rxBuffer, rxLength);
+		remainLength = rxLength;
 	}
 }
 
@@ -244,4 +266,15 @@ bool	HIDUART::SetPort(Object* _object, JSONNode const& _value)
 	}
 
 	return	hiduart->SetPort(_value.as_int());
+}
+
+bool	HIDUART::SetSerialTimeout(Object* _object, JSONNode const& _value)
+{
+	HIDUART*	hiduart = dynamic_cast<HIDUART*>(_object);
+	if (!hiduart)
+	{
+		return	false;	
+	}
+
+	return	hiduart->SetSerialTimeout(_value.as_int());
 }
