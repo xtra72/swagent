@@ -77,7 +77,7 @@ void	HIDUART::Preprocess()
 			TRACE_ERROR("Failed setting UART config: " << DecodeHidUartStatus(status).c_str());
 		}
     
-		status = HidUart_SetTimeouts(this->uart_, 1100, 1000);
+		status = HidUart_SetTimeouts(this->uart_, 10, 10);
 	}
 
 }
@@ -102,7 +102,7 @@ void	HIDUART::Process()
 	static	uint32_t	rxLength = 0;
 	static	uint8_t		buffer[HID_UART_MAX_READ_SIZE + 1];
 	static	uint32_t	length;
-
+	Date	startDate, endDate;
 	length = 0;
 	HID_UART_STATUS status = HidUart_Read(uart_, buffer, HID_UART_MAX_READ_SIZE , &length);
 

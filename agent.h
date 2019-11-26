@@ -27,6 +27,7 @@
 #define		MESSAGE_TYPE_READY_STARTED			117
 #define		MESSAGE_TYPE_READY_ALREADY_STARTED	118
 #define		MESSAGE_TYPE_READY_STOPPED				119
+#define		MESSAGE_TYPE_SLEEP_STARTED				120
 
 class	Agent : public ActiveObject
 {
@@ -248,6 +249,18 @@ public:
 		public:
 			MessageReadyStopped(std::string const& _receiver, std::string const& _sender, std::string const& _nid);
 			~MessageReadyStopped();
+
+			const std::string&	GetNID(void)	{	return	nid_;	}
+
+		protected:
+			std::string	nid_;
+	};
+
+	class	MessageSleepStarted : public Message	
+	{
+		public:
+			MessageSleepStarted(std::string const& _receiver, std::string const& _sender, std::string const& _nid);
+			~MessageSleepStarted();
 
 			const std::string&	GetNID(void)	{	return	nid_;	}
 

@@ -818,7 +818,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageMotionDetectionStarted(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_DEBUG("MOtion Detection Started : " << GetID());
+					TRACE_DEBUG("Motion Detection Started : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -834,7 +834,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageMotionDetectionAlreadyStarted(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_DEBUG("MOtion Detection already Started : " << GetID());
+					TRACE_DEBUG("Motion Detection already Started : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -850,7 +850,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageMotionDetectionStopped(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_DEBUG("MOtion Detection Stopped : " << GetID());
+					TRACE_DEBUG("Motion Detection Stopped : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -866,7 +866,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 				{
 					Message*	message = new Agent::MessageMotionDetectionAlreadyStopped(agent->GetID(), agent->GetID(), GetID());
 				
-					TRACE_DEBUG("MOtion Detection already stopped : " << GetID());
+					TRACE_DEBUG("Motion Detection already stopped : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;
@@ -1065,6 +1065,22 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 					Message*	message = new Agent::MessageReadyStopped(agent->GetID(), agent->GetID(), GetID());
 				
 					TRACE_DEBUG("Ready Stopped : " << GetID());
+					if (!agent->Post(message))
+					{
+						delete message;
+					}
+				}
+			}
+			break;
+
+		case	MSG_TYPE_SLEEP_STARTED:
+			{
+				Agent*	agent = dynamic_cast<Agent*>(parent_);
+				if (agent != NULL)
+				{
+					Message*	message = new Agent::MessageSleepStarted(agent->GetID(), agent->GetID(), GetID());
+				
+					TRACE_DEBUG("Sleep Started : " << GetID());
 					if (!agent->Post(message))
 					{
 						delete message;

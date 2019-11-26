@@ -201,6 +201,15 @@ Agent::MessageReadyStopped::~MessageReadyStopped()
 {
 }
 
+Agent::MessageSleepStarted::MessageSleepStarted(std::string const& _receiver, std::string const& _sender, std::string const& _nid)
+: Message(MESSAGE_TYPE_SLEEP_STARTED, _receiver,_sender), nid_(_nid)
+{
+}
+
+Agent::MessageSleepStarted::~MessageSleepStarted()
+{
+}
+
 Agent::ContractResponseReceiver::ContractResponseReceiver(Agent* _parent, std::string const& _topic) 
 : MQTTClient::Subscriber(_topic) 
 {
@@ -263,6 +272,7 @@ Agent::Agent(std::string const& _id)
 	message_handler_map_[MESSAGE_TYPE_READY_STARTED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_READY_ALREADY_STARTED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_READY_STOPPED]	= OnMessageConfirmCallback;
+	message_handler_map_[MESSAGE_TYPE_SLEEP_STARTED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_KEEP_ALIVE]	= OnMessageKeepAlive;
 }
 
@@ -294,6 +304,7 @@ Agent::Agent()
 	message_handler_map_[MESSAGE_TYPE_READY_STARTED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_READY_ALREADY_STARTED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_READY_STOPPED]	= OnMessageConfirmCallback;
+	message_handler_map_[MESSAGE_TYPE_SLEEP_STARTED]	= OnMessageConfirmCallback;
 	message_handler_map_[MESSAGE_TYPE_KEEP_ALIVE]	= OnMessageKeepAlive;
 }
 
@@ -1060,7 +1071,7 @@ bool	Agent::PushLogNotificationToServer(std::string const& _nodeId, std::string 
 	JSONNode	payload;
 	std::ostringstream	oss_topic;
 
-	oss_topic << "cwr/mfl/log/push";
+	oss_topic << "cwr/mfl/log";
 
 	std::ostringstream	oss_msg_id;
 	oss_msg_id << current_time.GetMicroseconds();
@@ -1528,6 +1539,7 @@ bool	Agent::OnMessageConfirmCallback(ActiveObject *_object, Message* _message)
 
 
 	std::string	log;
+	std::string	status;
 	std::string	nid;
 
 	switch(_message->GetType())
@@ -1536,18 +1548,20 @@ bool	Agent::OnMessageConfirmCallback(ActiveObject *_object, Message* _message)
 		{
 			MessageMotionDetectionStarted*	message = dynamic_cast<MessageMotionDetectionStarted *>(_message);
 			nid = message->GetNID();
+			status = "detect";	
 			log = "Motion detection started";	
 
-			agent->PushResponseToServer(nid, true, log);
+			agent->PushResponseToServer(nid, true, status);
 		}
 		break;
 	case	MESSAGE_TYPE_MOTION_DETECTION_ALREADY_STARTED:
 		{
 			MessageMotionDetectionAlreadyStarted*	message = dynamic_cast<MessageMotionDetectionAlreadyStarted *>(_message);
 			nid = message->GetNID();
+			status = "detect";	
 			log = "Motion detection already started";	
 
-			agent->PushResponseToServer(nid, true, log);
+			agent->PushResponseToServer(nid, true, status);
 		}
 		break;
 	case	MESSAGE_TYPE_MOTION_DETECTION_STOPPED:
@@ -1568,18 +1582,20 @@ bool	Agent::OnMessageConfirmCallback(ActiveObject *_object, Message* _message)
 		{
 			MessageScanStarted*	message = dynamic_cast<MessageScanStarted*>(_message);
 			nid = message->GetNID();
+			status = "active";	
 			log = "Scan started";	
 
-			agent->PushResponseToServer(nid, true, log);
+			agent->PushResponseToServer(nid, true, status);
 		}
 		break;
 	case	MESSAGE_TYPE_SCAN_ALREADY_STARTED:
 		{
 			MessageScanAlreadyStarted*	message = dynamic_cast<MessageScanAlreadyStarted*>(_message);
 			nid = message->GetNID();
+			status = "active";
 			log = "Scan already started";	
 
-			agent->PushResponseToServer(nid, true, log);
+			agent->PushResponseToServer(nid, true, status);
 		}
 		break;
 	case	MESSAGE_TYPE_SCAN_STOPPED:
@@ -1587,8 +1603,6 @@ bool	Agent::OnMessageConfirmCallback(ActiveObject *_object, Message* _message)
 			MessageScanStopped*	message = dynamic_cast<MessageScanStopped*>(_message);
 			nid = message->GetNID();
 			log = "Scan stopped";	
-
-			agent->PushResponseToServer(nid, true, log);
 		}
 		break;
 	case	MESSAGE_TYPE_SCAN_ALREADY_STOPPED:
@@ -1603,8 +1617,6 @@ bool	Agent::OnMessageConfirmCallback(ActiveObject *_object, Message* _message)
 			MessageTransStarted*	message = dynamic_cast<MessageTransStarted*>(_message);
 			nid = message->GetNID();
 			log = "Data transfer started";	
-
-			agent->PushResponseToServer(nid, true, log);
 		}
 		break;
 	case	MESSAGE_TYPE_TRANS_ALREADY_STARTED:
@@ -1633,9 +1645,10 @@ bool	Agent::OnMessageConfirmCallback(ActiveObject *_object, Message* _message)
 		{
 			MessageReadyStarted*	message = dynamic_cast<MessageReadyStarted*>(_message);
 			nid = message->GetNID();
+			status = "ready";
 			log = "Ready started";	
 
-			agent->PushResponseToServer(nid, true, log);
+			agent->PushResponseToServer(nid, true, status);
 		}
 		break;
 
@@ -1643,7 +1656,10 @@ bool	Agent::OnMessageConfirmCallback(ActiveObject *_object, Message* _message)
 		{
 			MessageReadyAlreadyStarted*	message = dynamic_cast<MessageReadyAlreadyStarted*>(_message);
 			nid = message->GetNID();
+			status = "ready";
 			log = "Ready already started";	
+
+			agent->PushResponseToServer(nid, true, status);
 		}
 		break;
 
@@ -1652,6 +1668,17 @@ bool	Agent::OnMessageConfirmCallback(ActiveObject *_object, Message* _message)
 			MessageReadyStopped*	message = dynamic_cast<MessageReadyStopped*>(_message);
 			nid = message->GetNID();
 			log = "Ready stopped";	
+		}
+		break;
+
+	case	MESSAGE_TYPE_SLEEP_STARTED:
+		{
+			MessageSleepStarted*	message = dynamic_cast<MessageSleepStarted*>(_message);
+			nid = message->GetNID();
+			status = "sleep";
+			log = "Sleep started";	
+
+			agent->PushResponseToServer(nid, true, status);
 		}
 		break;
 
