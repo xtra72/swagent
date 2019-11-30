@@ -128,6 +128,7 @@ protected:
 	uint32_t			last_data_time_;
 	uint32_t			live_timeout_;
 	int32_t				encoder_count_;
+	Timer				live_timer_;
 
 	std::vector<std::vector<uint16_t>>  channel_data_;
 	GPIOOut				*reset_control;

@@ -18,7 +18,8 @@ public:
 
 	virtual	bool	SetSerialID(std::string const& _serial);
 	virtual	bool	SetPort(uint32_t _port);
-	virtual	bool	SetSerialTimeout(uint32_t _timeout);
+	virtual	bool	SetSerialRxTimeout(uint32_t _timeout);
+	virtual	bool	SetSerialTxTimeout(uint32_t _timeout);
 
 	virtual	bool	OnRead(uint8_t* _data, uint32_t _length);
 	virtual	bool	OnWrite(uint8_t* _data, uint32_t _length);
@@ -39,7 +40,8 @@ protected:
     uint8_t		parity_;
     uint8_t		stopBits_;
     uint8_t		flowControl_;
-    uint32_t	serialTimeout_;
+    uint32_t	serialRxTimeout_;
+    uint32_t	serialTxTimeout_;
 
 	virtual	void	Preprocess();
 	virtual	void	Process();
@@ -47,7 +49,8 @@ protected:
 
 	static	bool	SetSerialID(Object* _object, JSONNode const& _value);
 	static	bool	SetPort(Object* _object, JSONNode const& _value);
-	static	bool	SetSerialTimeout(Object* _object, JSONNode const& _value);
+	static	bool	SetSerialRxTimeout(Object* _object, JSONNode const& _value);
+	static	bool	SetSerialTxTimeout(Object* _object, JSONNode const& _value);
 };
 
 #endif

@@ -8,10 +8,14 @@
 				"channel_count" : 8,
 				"frequency" : 922100000,
 				"power" : 18,
+				"live_check" : true,
+				"serial_tx_timeout" : 1000,
+				"serial_rx_timeout" : 20,
 				"trace" : 
 				{
 					"enable":true,
-					"dump":false
+					"dump":false,
+					"level" : "debug"
 				}
 			},
 			{
@@ -20,7 +24,8 @@
 				"channel_count" : 8,
 				"frequency" : 920000000,
 				"power" : 18,
-				"encoder" : true,
+				"live_check" : true,
+				"encoder" : false,
 				"trace" : 
 				{
 					"enable":true,

@@ -725,9 +725,12 @@ bool	Agent::SetNode(Object* _object, JSONNode const& _value)
 	TRACE_DEBUG2(agent, "Set Node : " << _value.write_formatted());
 	for(auto item = _value.begin() ; item != _value.end() ; item++)
 	{
-		Node* node = new Node(*item, agent);
-		agent->node_list_.push_back(node);
-		TRACE_DEBUG2(agent, "New node[" << node->GetID() << "] added!");
+		if (item->size() != 0)
+		{
+			Node* node = new Node(*item, agent);
+			agent->node_list_.push_back(node);
+			TRACE_DEBUG2(agent, "New node[" << node->GetID() << "] added!");
+		}
 	}
 
 	return	true;

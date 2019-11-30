@@ -72,6 +72,9 @@ void	Node::Preprocess()
 	usleep(1000);
 
 	RFStart();
+
+	live_timer_.Set(Date::GetCurrent());
+	live_timer_.Add(10 * 1000000);
 }
 
 void	Node::Process()
@@ -79,15 +82,16 @@ void	Node::Process()
 	CP2110::Process();
 	if (live_check_)
 	{
+
 		if (touch_)
 		{
-			//TRACE_DEBUG("Touched");
+			live_timer_.Set(Date::GetCurrent());
+			live_timer_.Add(live_timeout_ * 1000000);
 			touch_ = false;
-			live_timeout_ = 10;
 		}
 		else
 		{
-			if (--live_timeout_  == 0)
+			if (live_timer_.RemainTime() == 0)
 			{
 				TRACE_DEBUG("There is no reaction on the node.");
 				ColdReset();
@@ -95,6 +99,8 @@ void	Node::Process()
 				RFStart();
 				usleep(1000000);
 				SetEncoder(encoder_count_, 0);
+				live_timer_.Set(Date::GetCurrent());
+				live_timer_.Add(live_timeout_ * 1000000);
 				
 			}
 			
@@ -636,6 +642,7 @@ bool	Node::OnRead(uint8_t* _data, uint32_t _length)
 			//TRACE_DEBUG("OnRead : " << (char *)_data);
 			//TRACE_DEBUG_DUMP(_data,_length);
 			active_object->Post(new MessagePacketReceived(parent_->GetID(), id_, _data, _length));
+			touch_ = true;
 		}
 		else
 		{
@@ -757,6 +764,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 {
 	try
 	{
+	touch_ = true;
 		switch(data[4])
 		{
 		case	MSG_TYPE_DATA:
