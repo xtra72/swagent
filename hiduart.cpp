@@ -80,7 +80,7 @@ void	HIDUART::Preprocess()
 			TRACE_ERROR("Failed setting UART config: " << DecodeHidUartStatus(status).c_str());
 		}
     
-		status = HidUart_SetTimeouts(this->uart_, this->serialRxTimeout_, this->serialTxTimeout_);
+		status = HidUart_SetTimeouts(this->uart_, 1, this->serialTxTimeout_);
 	}
 
 }
@@ -116,51 +116,54 @@ bool	HIDUART::SetSerialTxTimeout(uint32_t _timeout)
 void	HIDUART::Process()
 {
 	static	uint8_t		rxBuffer[HID_UART_MAX_READ_SIZE + 1];
-	static	uint8_t		buffer[HID_UART_MAX_READ_SIZE + 1];
-	static	uint32_t	remainLength = 0;
-	uint32_t			rxLength = 0;
-	uint32_t			length = 0;
+	static	uint32_t	rxLength = 0;
+			uint8_t		buffer[HID_UART_MAX_READ_SIZE + 1];
+			uint32_t	length = 0;
+			uint32_t	offset = 0;
 
 
-	HID_UART_STATUS status = HidUart_Read(uart_, &buffer[remainLength], HID_UART_MAX_READ_SIZE - remainLength , &length);
+	HID_UART_STATUS status;
 
-	length += remainLength;
-	// Read at least 1 byte
-	if ((status == HID_UART_SUCCESS || status == HID_UART_READ_TIMED_OUT) && (length > 0))
+	length = 0;
+	for(uint32_t loop = 0 ; loop < this->serialRxTimeout_ ; loop++)
 	{
-		buffer[length] = 0;
-		for(uint32_t i = 0; i < length ; i++)
+		offset = 0;
+		status = HidUart_Read(uart_, &buffer[length], HID_UART_MAX_READ_SIZE - length, &offset);
+		length += offset;
+
+		if (offset == 0)
+		{
+			break;		
+		}
+	}
+
+	if (status == HID_UART_SUCCESS || status == HID_UART_READ_TIMED_OUT)
+	{
+		for(uint32_t i = 0; i < length; i++)
 		{
 			if ((buffer[i] == '\n') || (buffer[i] == '\r'))
 			{
 				if (rxLength)
 				{
-					rxBuffer[rxLength] = 0;
 					OnRead(rxBuffer, rxLength);
 					rxLength = 0;
-					remainLength = 0;
 				}
+			}
+			else if (buffer[i] == '+')
+			{
+				if (rxLength)
+				{
+					OnRead(rxBuffer, rxLength);
+					rxLength = 0;
+				}
+
+				rxBuffer[rxLength++] = buffer[i];
 			}
 			else
 			{
-				if (rxLength < HID_UART_MAX_READ_SIZE)
-				{
-					rxBuffer[rxLength++] = buffer[i];
-					if (rxLength == HID_UART_MAX_READ_SIZE)
-					{
-						//rxBuffer[rxLength] = 0;
-						//OnRead(rxBuffer, rxLength);
-						//rxLength = 0;
-					}
-				}
+				rxBuffer[rxLength++] = buffer[i];
 			}
 		}
-	}
-
-	if (rxLength != 0)
-	{
-		memcpy(buffer, rxBuffer, rxLength);
-		remainLength = rxLength;
 	}
 }
 

@@ -6,7 +6,7 @@
 				"id" : "pd10t01",
 				"port" : 0,
 				"channel_count" : 8,
-				"frequency" : 922100000,
+				"frequency" : 920000000,
 				"power" : 18,
 				"live_check" : true,
 				"serial_tx_timeout" : 1000,
@@ -22,7 +22,7 @@
 				"id" : "pd10t02",
 				"port" : 1,
 				"channel_count" : 8,
-				"frequency" : 920000000,
+				"frequency" : 921000000,
 				"power" : 18,
 				"live_check" : true,
 				"encoder" : false,
@@ -39,7 +39,7 @@
 			"port" : 1883
 		},
 		"log" : {
-			"plus_log" : false
+			"plus_log" : true
 		}
 	},
 	"trace" : {

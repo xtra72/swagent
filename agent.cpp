@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include "assert.h"
@@ -371,7 +372,7 @@ Node*	Agent::GetNode(std::string const& _id)
 
 bool	Agent::OnReceived(Message* _message)
 {
-	char rxBuffer[1024];
+	char rxBuffer[4096];
 	MessagePacketReceived * message_packet_received = dynamic_cast<MessagePacketReceived*>(_message);
 	if (!message_packet_received)
 	{
@@ -386,7 +387,13 @@ bool	Agent::OnReceived(Message* _message)
 	char*	token = strtok(rxBuffer, ":");
 	if (!token)
 	{
-		TRACE_WARN("Invalid format : " << rxBuffer);
+		std::ostringstream	oss;
+		oss << "[" << message_packet_received->GetSender() << "] : Invalid format - " << message_packet_received->GetSize() << ", ";
+		for(uint32_t i = 0 ; i < message_packet_received->GetSize() ; i++)
+		{
+			oss << " " << std::hex << std::setw(2) << std::setfill('0') << (uint32_t)rxBuffer[i];
+		}
+		TRACE_WARN(oss.str());
 		TRACE_DEBUG_DUMP((uint8_t *)rxBuffer, message_packet_received->GetSize());
 		return	false;
 	}
@@ -437,17 +444,23 @@ bool	Agent::OnReceived(Message* _message)
 
 bool	Agent::OnPlusData(std::string const &_node_id, char* _data)
 {
+	if (_data == NULL) 
+	{
+		TRACE_WARN("[" << _node_id << "] : Invalid format");
+		return	false;
+	}
+
 	char*	time_field = strtok(_data, ",");
 	if (!time_field)
 	{
-		TRACE_WARN("Invalid format.");
+		TRACE_WARN("[" << _node_id << "] : The time field is missing.");
 		return	false;
 	}
 
 	char*	length_field = strtok(NULL, ",");
 	if (!length_field)
 	{
-		TRACE_WARN("Invalid format.");
+		TRACE_WARN("[" << _node_id << "] : The length field is missing.");
 		return	false;
 	}
 
@@ -457,15 +470,22 @@ bool	Agent::OnPlusData(std::string const &_node_id, char* _data)
 		
 		if (!StringToUint32(length_field, length))
 		{
-			TRACE_WARN("Invalid length field : " << length_field);
+			TRACE_WARN("[" << _node_id << "] : The length field is invalid - " << length_field);
 			return	false;
 		}
 
 		char* token = strtok(NULL, " ");
-		if ((token == NULL) || (strlen(token) != length*2))
+		if (token == NULL)
 		{
 			std::ostringstream	oss;
-			oss << "Invalid format : " << strlen(token) << ", " << length;
+			oss << "[" << _node_id << "] : Empty frame - " << length;
+			TRACE_WARN(oss.str());
+			return	false;
+		}
+		else if	(strlen(token) != length*2)
+		{
+			std::ostringstream	oss;
+			oss << "[" << _node_id << "] : Invalid data(" << length << ") - " << strlen(token);
 			TRACE_WARN(oss.str());
 			return	false;
 		}
@@ -475,7 +495,7 @@ bool	Agent::OnPlusData(std::string const &_node_id, char* _data)
 		if (!StringToUint8(token, byte_array, sizeof(byte_array), length))
 		{
 			std::ostringstream	oss;
-			oss << "Invalid Data : " << byte_array;
+			oss << "[" << _node_id << "] : Invalid data - " << byte_array;
 			throw std::invalid_argument(oss.str());
 		}
 
@@ -490,12 +510,12 @@ bool	Agent::OnPlusData(std::string const &_node_id, char* _data)
 	}
 	catch(std::out_of_range& e)
 	{
-		TRACE_WARN("Out of Range ." << time_field << ", " << length_field);
+		TRACE_WARN("[" << _node_id << "] : Out of Range - " << time_field << ", " << length_field);
 		return	false;
 	}
 	catch(std::invalid_argument& e)
 	{
-		TRACE_WARN("Invalid format." << time_field << ", " << length_field);
+		TRACE_WARN("[" << _node_id << "] : Invalid argument - " << time_field << ", " << length_field);
 		return	false;
 	}
 

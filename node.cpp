@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <iomanip>
 #include "node.h"
 #include "message.h"
 #include "utils.h"
@@ -764,7 +765,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 {
 	try
 	{
-	touch_ = true;
+		touch_ = true;
 		switch(data[4])
 		{
 		case	MSG_TYPE_DATA:
@@ -775,7 +776,11 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 					if ((length - 12) % (channel_data_.size() * 2) != 0)
 					{
 						std::ostringstream	oss;
-						oss << "Invalid Data : " << data;
+						oss << "Invalid Data[" << length << "] : ";
+						for(uint32_t i = 0 ; i < length ; i++) 
+						{
+							oss << " " << std::hex << std::setw(2) << std::setfill('0') << (uint32_t)data[i];
+						}
 						throw std::invalid_argument(oss.str());
 					}
 
@@ -1140,7 +1145,7 @@ bool	Node::OnData(uint8_t* data, uint32_t length)
 	}
 	catch(std::invalid_argument& e)
 	{
-		TRACE_WARN("Invalid format.");
+		TRACE_WARN("Invalid format - " << e.what());
 		return	false;
 	}
 
